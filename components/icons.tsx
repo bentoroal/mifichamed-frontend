@@ -10,7 +10,11 @@ import {
   ShieldCheck, 
   EyeOff, 
   HeartPulse, 
-  UserPlus 
+  UserPlus, 
+  LayoutDashboard,  
+  ShieldAlert, 
+  Scissors, 
+  BriefcaseMedical
 } from 'lucide-react';
 
 interface IconProps {
@@ -28,3 +32,7 @@ export const VerifiedUser = ({ className }: IconProps) => <ShieldCheck className
 export const VisibilityOff = ({ className }: IconProps) => <EyeOff className={className} />;
 export const HealthMetrics = ({ className }: IconProps) => <HeartPulse className={className} />;
 export const AppRegistration = ({ className }: IconProps) => <UserPlus className={className} />;
+export const Dashboard = ({ className }: IconProps) => <LayoutDashboard className={className} />;
+export const Alert = ({ className }: IconProps) => <ShieldAlert className={className} />; 
+export const Surgery = ({ className }: IconProps) => <Scissors className={className} />;
+export const MedicalBriefcase = ({ className }: IconProps) => <BriefcaseMedical className={className} />;

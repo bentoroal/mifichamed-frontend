@@ -1,75 +1,43 @@
+// app/dashboard/page.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { motion } from "motion/react";
+import { Activity, Stethoscope, Pill, ShieldAlert, TrendingUp, FileText } from "lucide-react";
+import MetricCard from "@/components/ui/MetricCard";
+import DashboardCard from "@/components/ui/DashboardCard";
 
-export default function Dashboard() {
-  const [data, setData] = useState<any>(null);
-
-  useEffect(() => {
-    async function fetchData() {
-      const res = await fetch("http://127.0.0.1:8000/dashboard", {
-        headers: { Authorization: `Bearer TOKEN_AQUI` },
-      });
-      const json = await res.json();
-      setData(json);
-    }
-    fetchData();
-  }, []);
-
+export default function DashboardPage() {
   return (
-    <main className="min-h-screen bg-[#A8E6CF] p-8">
-      <h1 className="text-4xl font-bold text-[#333] mb-8 text-center">
-        MiFichaMed Dashboard
-      </h1>
+    <div className="container mx-auto max-w-7xl p-6 md:p-10">
+      {/* 1. Encabezado con Animación */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-10">
+        <p className="text-teal-600 font-bold mb-1">¡Hola Alex!</p>
+        <h2 className="text-4xl font-black text-teal-950">Resumen de Salud</h2>
+      </motion.div>
 
-      {/* Contenedor de tarjetas */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Tarjeta de perfil */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-semibold text-[#56C596] mb-4">Perfil</h2>
-          <p className="text-gray-700">Nombre: Juan Pérez</p>
-          <p className="text-gray-700">Edad: 32</p>
-          <p className="text-gray-700">Correo: juanperez@email.com</p>
+      {/* 2. Métricas */}
+      <section className="mb-10">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+          <MetricCard label="Peso" value="72.5" unit="kg" />
+          <MetricCard label="IMC" value="22.9" status="Normal" />
+          {/* ... otros MetricCards */}
         </div>
+      </section>
 
-        {/* Tarjeta de condiciones */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-semibold text-[#56C596] mb-4">Condiciones</h2>
-          <ul className="list-disc list-inside text-gray-700">
-            <li>Hipertensión</li>
-            <li>Diabetes Tipo 2</li>
-          </ul>
-        </div>
-
-        {/* Tarjeta de medicamentos */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-semibold text-[#56C596] mb-4">Medicamentos</h2>
-          <ul className="list-disc list-inside text-gray-700">
-            <li>Metformina</li>
-            <li>Lisinopril</li>
-          </ul>
-        </div>
-
-        {/* Tarjeta de síntomas */}
-        <div className="bg-white rounded-xl shadow-md p-6">
-          <h2 className="text-xl font-semibold text-[#56C596] mb-4">Síntomas</h2>
-          <ul className="list-disc list-inside text-gray-700">
-            <li>Dolor de cabeza</li>
-            <li>Cansancio</li>
-          </ul>
-        </div>
-
-        {/* Tarjeta de estadísticas */}
-        <div className="bg-white rounded-xl shadow-md p-6 col-span-1 md:col-span-2">
-          <h2 className="text-xl font-semibold text-[#56C596] mb-4">Estadísticas</h2>
-          {data ? (
-            <pre className="bg-gray-100 p-4 rounded text-sm text-gray-700">
-              {JSON.stringify(data, null, 2)}
-            </pre>
-          ) : (
-            <p className="text-gray-600">Cargando datos...</p>
-          )}
-        </div>
+      {/* 3. Grid de Tarjetas */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <DashboardCard title="Enfermedades" icon={Activity} iconColor="text-red-400">
+           {/* Contenido de la tarjeta */}
+        </DashboardCard>
+        <DashboardCard title="Síntomas" icon={Stethoscope} iconColor="text-blue-400">
+          {/* Contenido de la tarjeta */}
+        </DashboardCard>
+        <DashboardCard title="Tratamientos" icon={Pill} iconColor="text-green-400">
+          {/* Contenido de la tarjeta */}
+        </DashboardCard>
+        <DashboardCard title="Alergias" icon={ShieldAlert} iconColor="text-yellow-400">
+          {/* Contenido de la tarjeta */}
+        </DashboardCard>
       </div>
-    </main>
+    </div>
   );
 }

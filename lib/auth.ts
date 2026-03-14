@@ -1,9 +1,7 @@
+import { apiFetch } from "./api"
+
 export function saveToken(token: string) {
   localStorage.setItem("token", token)
-}
-
-export function getToken() {
-  return localStorage.getItem("token")
 }
 
 export function logout() {
@@ -11,6 +9,21 @@ export function logout() {
   window.location.href = "/login"
 }
 
-export function isAuthenticated() {
-  return !!localStorage.getItem("token")
+export function getToken() {
+  return localStorage.getItem("token")
+}
+
+export async function validateToken() {
+
+  const token = getToken()
+
+  if (!token) return false
+
+  try {
+    await apiFetch("/auth/me")
+    return true
+  } catch {
+    logout()
+    return false
+  }
 }
