@@ -243,6 +243,8 @@ export default function App() {
       <AuthModal
       open={openAuth}
       onClose={() => setOpenAuth(false)}
+      mode= {authMode}
+      setMode={setAuthMode}
     />
     </div>
   );

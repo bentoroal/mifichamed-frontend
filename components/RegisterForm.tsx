@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { apiFetch } from "@/lib/api"
 
 export default function RegisterForm(){
 
@@ -23,26 +24,21 @@ export default function RegisterForm(){
       return
     }
 
-    const res = await fetch("http://127.0.0.1:8000/auth/register",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json"
-      },
-      body:JSON.stringify({
-        email,
-        password
+    try {
+      const data = await apiFetch("/auth/register", {
+        method:"POST",
+        body:JSON.stringify({
+          email,
+          password
+        })
       })
-    })
 
-    const data = await res.json()
+      setSuccess("Cuenta creada. Ahora puedes iniciar sesión.")
+      setError("")
 
-    if(!res.ok){
-      setError(data.detail || "Error al registrar usuario")
-      return
+    } catch (err:any) {
+      setError(err.message || "Error al registrar usuario")
     }
-
-    setSuccess("Cuenta creada. Ahora puedes iniciar sesión.")
-    setError("")
   }
 
   return(

@@ -4,9 +4,7 @@ import { useState } from "react";
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
 
-export default function AuthModal({ open, onClose }: any) {
-
-  const [mode, setMode] = useState<"login" | "register">("login");
+export default function AuthModal({ open, onClose, mode, setMode }: any) {
 
   if (!open) return null;
 

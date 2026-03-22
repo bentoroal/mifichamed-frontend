@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { validateToken } from "@/lib/auth"
 
 export default function ProtectedRoute({
   children
@@ -11,28 +10,20 @@ export default function ProtectedRoute({
 }) {
 
   const router = useRouter()
-  const [loading,setLoading] = useState(true)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const token = localStorage.getItem("token")
 
-    async function checkAuth(){
-
-      const valid = await validateToken()
-
-      if(!valid){
-        router.push("/login")
-        return
-      }
-
+    if (!token) {
+      router.push("/")
+    } else {
       setLoading(false)
     }
+  }, [router])
 
-    checkAuth()
-
-  },[])
-
-  if(loading){
-    return <p className="p-10 text-center">Cargando sesión...</p>
+  if (loading) {
+    return <p className="p-6">Cargando...</p>
   }
 
   return <>{children}</>

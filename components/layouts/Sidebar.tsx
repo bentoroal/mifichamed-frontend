@@ -1,5 +1,9 @@
-// components/layouts/Sidebar.tsx
+"use client";
+
 import React from 'react';
+import Link from "next/link"
+import { logout } from "@/lib/auth"
+import { LogOut } from "lucide-react"
 import { 
   LayoutDashboard, 
   Activity, 
@@ -8,27 +12,31 @@ import {
   ShieldAlert, 
   Scissors, 
   FileText,
-  BriefcaseMedical
+  BriefcaseMedical,
+  SquareUserRound
 } from "lucide-react";
 
 interface NavItemProps {
   icon: React.ElementType;
   label: string;
+  href: string;
   active?: boolean;
 }
 
-const NavItem = ({ icon: Icon, label, active }: NavItemProps) => (
-  <a
-    href="#"
+const NavItem = ({ icon: Icon, label, href, active }: NavItemProps) => (
+  <Link
+    href={href}
     className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all ${
       active
         ? 'bg-teal-200/50 shadow-sm border border-teal-200 text-teal-900'
         : 'text-teal-700 hover:bg-white/60 hover:text-teal-900 hover:shadow-sm'
     }`}
   >
-    <Icon className={`w-5 h-5 ${active ? 'text-teal-700' : 'text-teal-500 group-hover:text-teal-700'}`} />
-    <span className={active ? 'font-bold' : 'font-medium'}>{label}</span>
-  </a>
+    <Icon className={`w-5 h-5`} />
+    <span className={active ? 'font-bold' : 'font-medium'}>
+      {label}
+    </span>
+  </Link>
 );
 
 export default function Sidebar() {
@@ -45,33 +53,29 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-        <NavItem icon={LayoutDashboard} label="Resumen" active />
-        <NavItem icon={Activity} label="Enfermedades" />
-        <NavItem icon={Stethoscope} label="Síntomas" />
-        <NavItem icon={Pill} label="Tratamientos" />
-        <NavItem icon={ShieldAlert} label="Alergias" />
-        <NavItem icon={Scissors} label="Cirugías" />
-        
-        <div className="pt-4 mt-4 border-t border-teal-200/50">
-          <NavItem icon={FileText} label="Generar Informe" />
-        </div>
+        <NavItem icon={LayoutDashboard} label="Resumen" href="/dashboard" />
+        <NavItem icon={SquareUserRound} label="Perfil" href="/dashboard/profile" />
+        <NavItem icon={Activity} label="Enfermedades" href="/dashboard/conditions" />
+        <NavItem icon={Stethoscope} label="Síntomas" href="/dashboard/symptoms" />
+        <NavItem icon={Pill} label="Tratamientos" href="/dashboard/treatments" />
+        <NavItem icon={ShieldAlert} label="Alergias" href="/dashboard/allergies" />
+        <NavItem icon={Scissors} label="Cirugías" href="/dashboard/surgeries" />
+        <NavItem icon={FileText} label="Generar Informe" href="/dashboard/report" />
       </nav>
 
-      <div className="border-t border-teal-100 p-4">
-        <div className="flex items-center gap-3 rounded-xl border border-teal-200 bg-white/40 p-3 shadow-sm backdrop-blur-sm">
-          <div className="h-10 w-10 overflow-hidden rounded-full bg-teal-100 ring-2 ring-white">
-            <img
-              alt="Alex Morgan"
-              className="h-full w-full object-cover"
-              src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80"
-            />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <p className="truncate text-sm font-semibold text-teal-900">Alex Morgan</p>
-            <p className="truncate text-xs text-teal-600">alex.m@example.com</p>
-          </div>
-        </div>
-      </div>
+      <div className="border-t border-teal-100 p-4 space-y-3">
+
+
+      {/* LOGOUT */}
+      <button
+        onClick={logout}
+        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-red-600 hover:bg-red-50 transition"
+      >
+        <LogOut className="w-5 h-5" />
+        <span className="font-medium">Cerrar sesión</span>
+      </button>
+
+    </div>
     </aside>
   );
 }

@@ -14,7 +14,8 @@ import {
   LayoutDashboard,  
   ShieldAlert, 
   Scissors, 
-  BriefcaseMedical
+  BriefcaseMedical,
+  SquareUserRound
 } from 'lucide-react';
 
 interface IconProps {
@@ -36,3 +37,4 @@ export const Dashboard = ({ className }: IconProps) => <LayoutDashboard classNam
 export const Alert = ({ className }: IconProps) => <ShieldAlert className={className} />; 
 export const Surgery = ({ className }: IconProps) => <Scissors className={className} />;
 export const MedicalBriefcase = ({ className }: IconProps) => <BriefcaseMedical className={className} />;
+export const UserProfile = ({ className }: IconProps) => <SquareUserRound className={className} />;

@@ -6,7 +6,7 @@ export function saveToken(token: string) {
 
 export function logout() {
   localStorage.removeItem("token")
-  window.location.href = "/login"
+  window.location.href = "/"
 }
 
 export function getToken() {
@@ -14,7 +14,6 @@ export function getToken() {
 }
 
 export async function validateToken() {
-
   const token = getToken()
 
   if (!token) return false
@@ -23,7 +22,6 @@ export async function validateToken() {
     await apiFetch("/auth/me")
     return true
   } catch {
-    logout()
     return false
   }
 }

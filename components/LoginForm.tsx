@@ -1,46 +1,50 @@
 "use client"
 
 import { useState } from "react"
+import { saveToken } from "@/lib/auth"
+import { apiFetch } from "@/lib/api"
+import { useRouter } from "next/navigation"
 
 export default function LoginForm() {
 
-  const [email,setEmail] = useState("")
-  const [password,setPassword] = useState("")
-  const [error,setError] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
 
-  async function handleSubmit(e:any){
+  const router = useRouter() // ✅ SIEMPRE arriba
+
+  async function handleSubmit(e: any) {
     e.preventDefault()
 
     const form = new URLSearchParams()
     form.append("username", email)
     form.append("password", password)
 
-    const res = await fetch("http://127.0.0.1:8000/auth/login",{
-      method:"POST",
-      body:form
-    })
+    try {
+      const data = await apiFetch("/auth/login", {
+        method: "POST",
+        body: form,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        }
+      })
 
-    const data = await res.json()
+      saveToken(data.access_token)
+      router.push("/dashboard")    
 
-    if(!res.ok){
-      setError(data.detail || "Error al iniciar sesión")
-      return
+    } catch (err: any) {
+      setError(err.message || "Error al iniciar sesión")
     }
-
-    localStorage.setItem("token",data.access_token)
-
-    window.location.href="/dashboard"
   }
 
   return (
-
     <form onSubmit={handleSubmit} className="space-y-5">
 
       <input
         type="email"
         placeholder="Correo electrónico"
         value={email}
-        onChange={(e)=>setEmail(e.target.value)}
+        onChange={(e) => setEmail(e.target.value)}
         className="w-full border rounded-lg px-4 py-3"
         required
       />
@@ -49,7 +53,7 @@ export default function LoginForm() {
         type="password"
         placeholder="Contraseña"
         value={password}
-        onChange={(e)=>setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
         className="w-full border rounded-lg px-4 py-3"
         required
       />

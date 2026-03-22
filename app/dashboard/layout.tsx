@@ -13,7 +13,7 @@ export default function DashboardLayout({
         <Sidebar />
         
         <main className="flex-1 overflow-y-auto">
-          {children} {/* Aquí se inyectará lo que pongas en page.tsx */}
+          {children} {/* Aquí se inyectará page.tsx */}
         </main>
       </div>
     </ProtectedRoute>

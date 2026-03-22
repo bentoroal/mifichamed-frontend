@@ -18,15 +18,22 @@ export async function apiFetch(
 
   if (res.status === 401) {
     localStorage.removeItem("token")
-    window.location.href = "/login"
-    return
+    window.location.href = "/"
+    throw new Error("Unauthorized")
   }
 
-  const data = await res.json()
+  let data = null
+
+  try {
+    data = await res.json()
+  } catch {
+    // respuesta vacía
+  }
 
   if (!res.ok) {
-    throw new Error(data.detail || "API error")
-  }
+  
+  throw new Error(JSON.stringify(data))
+}
 
   return data
 }
