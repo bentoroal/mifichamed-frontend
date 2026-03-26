@@ -126,17 +126,26 @@ useEffect(() => {
 
           ) : (
 
-            <ul className="space-y-2">
+            <div className="flex flex-wrap gap-2">
+              {active_conditions.map((c) => {
+                const isChronic = c.status === "chronic"
 
-              {active_conditions.map((c) => (
-
-                <li key={c.id} className="text-sm">
-                  {c.condition.name}
-                </li>
-
-              ))}
-
-            </ul>
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => router.push(`/dashboard/conditions?selected=${c.id}`)}
+                    className={`
+                      cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                      ${isChronic 
+                        ? "bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100" 
+                        : "bg-red-50 text-red-700 border-red-100 hover:bg-red-100"}
+                    `}
+                  >
+                    {c.condition?.name}
+                  </div>
+                )
+              })}
+            </div>
 
           )}
 

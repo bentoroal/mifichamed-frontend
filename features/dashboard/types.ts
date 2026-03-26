@@ -1,5 +1,6 @@
-export type Condition = {
+export type UserCondition = {
   id: number
+  status: string
   condition: {
     name: string
   }
@@ -33,7 +34,7 @@ export type DashboardData = {
     weight: number | null
     height: number | null
   }
-  active_conditions: Condition[]
+  active_conditions: UserCondition[]
   active_symptoms: Symptom[]
   active_allergies: Allergy[]
 }

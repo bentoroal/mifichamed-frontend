@@ -7,7 +7,6 @@ import { getCategoryIcon } from "@/lib/categoryIcons"
 export default function ConditionDetail({ condition, refresh }: any) {
   const [isEditOpen, setIsEditOpen] = useState(false)
 
-  // Estado vacío: Mantenemos el mismo padding y borde que el listado para que alineen
   if (!condition) {
     return (
       <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 text-slate-400">
@@ -27,7 +26,6 @@ export default function ConditionDetail({ condition, refresh }: any) {
 
   return (
     <>
-      {/* 1. EL MODAL FUERA: Al estar aquí, no ocupa lugar en el flujo del space-y-4 */}
       <ConditionModal
         isOpen={isEditOpen}
         onClose={() => setIsEditOpen(false)}
@@ -36,10 +34,9 @@ export default function ConditionDetail({ condition, refresh }: any) {
         condition={condition}
       />
 
-      {/* 2. EL CONTENEDOR DE ESPACIO: Solo envuelve lo que se ve */}
       <div className="space-y-4">
         
-        {/* HEADER CARD: Ahora es el PRIMER HIJO, mt-0 automático */}
+        {/* HEADER CARD */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
           <h2 className="text-lg font-bold text-slate-800">Detalle</h2>
 

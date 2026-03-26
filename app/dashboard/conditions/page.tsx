@@ -5,11 +5,14 @@ import ConditionDetail from "@/features/conditions/components/ConditionDetail"
 import ConditionsHeader from "@/features/conditions/components/ConditionsHeader"
 import ConditionModal from "@/features/conditions/components/ConditionModal"
 import { useUserConditions } from "@/features/conditions/hooks/useUserConditions"
+import { useSearchParams } from "next/navigation"
 
 import { useState } from "react"
 
 export default function ConditionsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const searchParams = useSearchParams()
+  const selectedFromUrl = searchParams.get("selected")
 
   const {
     filtered,
@@ -17,7 +20,9 @@ export default function ConditionsPage() {
     setSelected,
     fetchConditions,
     search,
-  } = useUserConditions()
+  } = useUserConditions(
+    selectedFromUrl ? Number(selectedFromUrl) : null
+  )
 
   return (
     <div className="p-8 bg-slate-50 min-h-screen">
@@ -39,7 +44,6 @@ export default function ConditionsPage() {
         <div className="flex gap-6 items-start">
 
           {/* COLUMNA IZQUIERDA: Listado */}
-          {/* Eliminamos el flex-col extra si solo hay un componente para evitar gaps fantasmas */}
           <div className="w-2/5">
             <ConditionList
               conditions={filtered}
