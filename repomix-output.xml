@@ -44,6 +44,7 @@ app/dashboard/conditions/page.tsx
 app/dashboard/layout.tsx
 app/dashboard/page.tsx
 app/dashboard/profile/page.tsx
+app/dashboard/symptoms/page.tsx
 app/favicon.ico
 app/globals.css
 app/layout.tsx
@@ -59,6 +60,7 @@ components/RegisterForm.tsx
 components/RegisterModal.tsx
 components/ui/BaseModal.tsx
 components/ui/DashboardCard.tsx
+components/ui/DashboardHeader.tsx
 components/ui/FormField.tsx
 components/ui/Input.tsx
 components/ui/MetricCard.tsx
@@ -70,16 +72,27 @@ features/conditions/components/ConditionCard.tsx
 features/conditions/components/ConditionDetail.tsx
 features/conditions/components/ConditionList.tsx
 features/conditions/components/ConditionModal.tsx
-features/conditions/components/ConditionsHeader.tsx
 features/conditions/hooks/useUserConditions.tsx
 features/conditions/services/conditionServices.ts
 features/conditions/utils/conditionLabels.ts
 features/dashboard/types.ts
 features/profile/components/ProfileForm.tsx
+features/symptoms/components/SymptomCard.tsx
+features/symptoms/components/SymptomDaySelector.tsx
+features/symptoms/components/SymptomDetail.tsx
+features/symptoms/components/SymptomList.tsx
+features/symptoms/components/SymptomModal.tsx
+features/symptoms/hooks/useSymptomDaily.ts
+features/symptoms/hooks/useSymptomDetail.ts
+features/symptoms/hooks/useUserSymptom.tsx
+features/symptoms/services/symptomServices.ts
+hooks/useDebounce.ts
 hooks/useFetch.ts
 lib/api.ts
 lib/auth.ts
+lib/categoryIcons.ts
 lib/dashboard.tsx
+lib/symptomIcons.ts
 next-env.d.ts
 next.config.ts
 package.json
@@ -98,60 +111,79 @@ tsconfig.json
 <files>
 This section contains the contents of the repository's files.
 
-<file path="app/dashboard/conditions/page.tsx">
+<file path="app/dashboard/symptoms/page.tsx">
 "use client"
 
-import ConditionList from "@/features/conditions/components/ConditionList"
-import ConditionDetail from "@/features/conditions/components/ConditionDetail"
-import ConditionsHeader from "@/features/conditions/components/ConditionsHeader"
-import ConditionModal from "@/features/conditions/components/ConditionModal"
-import { useUserConditions } from "@/features/conditions/hooks/useUserConditions"
-
+import SymptomList from "@/features/symptoms/components/SymptomList"
+import SymptomDetail from "@/features/symptoms/components/SymptomDetail"
+import DashboardHeader from "@/components/ui/DashboardHeader"
+import SymptomModal from "@/features/symptoms/components/SymptomModal"
+import { useUserSymptoms } from "@/features/symptoms/hooks/useUserSymptom"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 
-export default function ConditionsPage() {
+export default function SymptomsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const searchParams = useSearchParams()
+  const selectedFromUrl = searchParams.get("selected")
 
   const {
     filtered,
     selected,
     setSelected,
-    fetchConditions,
+    fetchSymptoms,
     search,
-  } = useUserConditions()
+    remove,
+  } = useUserSymptoms(
+    selectedFromUrl ? Number(selectedFromUrl) : null
+  )
+
+  // 🔹 conectar header con hook
+  const handleSearch = (value: string) => {
+    search(value)
+  }
+
+  const handleAdd = () => {
+    setIsModalOpen(true)
+  }
 
   return (
-    <div className="p-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
 
-        <ConditionModal
+        <SymptomModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchConditions}
+          onSuccess={fetchSymptoms}
         />
 
         {/* HEADER */}
-        <ConditionsHeader
-          onSearch={search}
-          onAdd={() => setIsModalOpen(true)}
+        <DashboardHeader
+          title="Síntomas"
+          placeholder="Ej: Dolor de cabeza"
+          onSearch={handleSearch}
+          onAdd={handleAdd}
         />
 
-        <div className="flex gap-8">
+        {/* CONTENIDO */}
+        <div className="flex gap-6 items-start">
 
-          {/* LEFT */}
+          {/* LISTA */}
           <div className="w-2/5">
-            <ConditionList
-              conditions={filtered}
+            <SymptomList
+              symptoms={filtered}
               selected={selected}
               onSelect={setSelected}
             />
           </div>
 
-          {/* RIGHT */}
+          {/* DETALLE */}
           <div className="w-3/5">
-            <ConditionDetail
-              condition={selected}
-              refresh={fetchConditions}
+            <SymptomDetail
+              symptom={selected}
+              refresh={fetchSymptoms}
+              onDelete={remove}
             />
           </div>
 
@@ -160,6 +192,1171 @@ export default function ConditionsPage() {
     </div>
   )
 }
+</file>
+
+<file path="components/ui/DashboardHeader.tsx">
+"use client"
+
+import { useState, useEffect } from "react"
+import { Search, Plus } from "lucide-react"
+import { useDebounce } from "@/hooks/useDebounce"
+
+export default function DashboardHeader({
+  title,
+  placeholder = "Buscar...",
+  onSearch,
+  onAdd,
+}: any) {
+  const [query, setQuery] = useState("")
+  const debouncedQuery = useDebounce(query, 400)
+
+  useEffect(() => {
+    onSearch?.(debouncedQuery)
+  }, [debouncedQuery, onSearch])
+
+  return (
+    <div className="flex items-center justify-between mb-6">
+
+      {/* LEFT */}
+      <div className="text-sm text-slate-400">
+        MiFichaMed /{" "}
+        <span className="font-medium text-slate-900">{title}</span>
+      </div>
+
+      {/* RIGHT */}
+      <div className="flex items-center gap-4">
+
+        {/* SEARCH */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={placeholder}
+            className="bg-slate-100 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64"
+          />
+        </div>
+
+        {/* ADD */}
+        <button
+          onClick={onAdd}
+          className="bg-primary hover:bg-secondary text-white font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md active:scale-95"
+        >
+          <Plus className="w-4 h-4" />
+          Añadir
+        </button>
+
+      </div>
+    </div>
+  )
+}
+</file>
+
+<file path="features/symptoms/components/SymptomCard.tsx">
+import { getSymptomIcon} from "@/lib/symptomIcons";
+
+type SymptomCardProps = {
+  symptom: any;
+  isSelected: boolean;
+  onClick: () => void;
+};
+
+export default function SymptomCard({
+  symptom,
+  isSelected,
+  onClick,
+}: SymptomCardProps) {
+
+    const severityConfig = {
+        low: {
+            range: [1, 3],
+            label: "Leve",
+            style: "bg-emerald-100 text-emerald-700",
+        },
+        medium: {
+            range: [4, 6],
+            label: "Moderado",
+            style: "bg-yellow-100 text-yellow-700",
+        },
+        high: {
+            range: [7, 8],
+            label: "Alto",
+            style: "bg-orange-100 text-orange-700",
+        },
+        critical: {
+            range: [9, 10],
+            label: "Crítico",
+            style: "bg-red-100 text-red-700",
+        },
+        } as const;
+
+    const severity = severityConfig[symptom.severity as keyof typeof severityConfig];
+
+    const Icon = getSymptomIcon(symptom.symptom?.name);
+
+    return (
+        <div
+          onClick={onClick}
+          className={`
+            relative p-4 rounded-xl cursor-pointer transition-all border
+            group
+            ${
+                isSelected
+                    ? "border-primary bg-white shadow-sm"
+                    : "border-slate-200 bg-white hover:border-primary/40 hover:shadow-sm"
+                }   
+            `}
+            >
+
+            {/* Barra lateral de selección */} 
+            {isSelected && (
+                <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-r-xl" />
+            )}  
+
+            <div className="flex items-start gap-3">
+
+            {/* ICONO */}   
+            <div
+                className={`
+                    w-10 h-10 rounded-lg flex items-center justify-center transition
+                    ${
+                    isSelected
+                        ? "bg-emerald-200 text-emerald-700"
+                        : "bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200"
+                    }
+                `}
+                >
+                <Icon className="w-5 h-5" />
+            </div>
+
+            {/* CONTENIDO */}
+            <div className="flex-1 min-w-0">
+
+              <div className="flex justify-between items-start gap-2">
+
+                <h4 className="font-semibold text-slate-800 leading-tight truncate">
+                  {symptom.symptom?.name}
+                </h4>
+
+                {severity && (
+                  <span
+                    className={`
+                      text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap
+                      ${severity.style}
+                    `}
+                  >
+                    {severity.label}
+                  </span>
+                )}
+              </div>
+
+              <p className="text-xs text-slate-500 mt-1">
+                {symptom.start_date || "Sin fecha"}
+              </p>
+
+            </div>
+        </div>
+    </div>
+    )
+}
+</file>
+
+<file path="features/symptoms/components/SymptomDaySelector.tsx">
+import { format, subDays, isToday } from "date-fns"
+import { es } from "date-fns/locale"
+
+export default function SymptomDaySelector({
+  startDate,
+  selectedDate,
+  onSelect,
+}: any) {
+  if (!startDate) return null
+
+  const today = new Date()
+  const start = new Date(startDate)
+
+  const days = []
+  let current = today
+
+  while (current >= start) {
+    days.push(new Date(current))
+    current = subDays(current, 1)
+  }
+    // Invertimos para mostrar del más antiguo al más reciente
+    days.reverse()
+
+  return (
+    <div className="grid grid-cols-7 gap-2">
+      {days.map((day, i) => {
+        const isSelected =
+          selectedDate?.toDateString() === day.toDateString()
+
+        return (
+          <button
+            key={i}
+            onClick={() => onSelect(day)}
+            className={`
+              w-full flex flex-col items-center p-2 rounded-lg border transition
+              ${
+                isSelected
+                  ? "bg-primary text-white border-primary shadow-sm"
+                  : "bg-muted border-transparent hover:border-secondary"
+              }
+            `}
+          >
+            <span
+              className={`text-[10px] font-medium ${
+                isSelected ? "text-white/80" : "text-slate-500"
+              }`}
+            >
+              {isToday(day)
+                ? "HOY"
+                : format(day, "EEE", {locale: es}).toUpperCase()}
+            </span>
+
+            <span className="text-sm font-bold">
+              {format(day, "d", {locale: es})}
+            </span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+</file>
+
+<file path="features/symptoms/components/SymptomDetail.tsx">
+"use client"
+
+import { useState, useEffect } from "react"
+import { Pencil, Trash2 } from "lucide-react"
+import SymptomModal from "@/features/symptoms/components/SymptomModal"
+import { useSymptomDetail } from "@/features/symptoms/hooks/useSymptomDetail"
+import SymptomDaySelector from "./SymptomDaySelector"
+import { useSymptomDaily } from "../hooks/useSymptomDaily"
+import {getSymptomIcon} from "@/lib/symptomIcons";
+
+export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+
+  const { notes, setNotes } = useSymptomDetail(symptom)
+
+  const { severity, setSeverity } = useSymptomDaily(
+    symptom?.id,
+    selectedDate
+  )
+  const Icon = getSymptomIcon(symptom?.symptom?.name)
+
+  // 🔥 reset fecha al cambiar síntoma
+  useEffect(() => {
+    setSelectedDate(new Date())
+  }, [symptom?.id])
+
+  if (!symptom) {
+    return (
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 text-slate-400">
+        Selecciona un síntoma para ver el detalle
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <SymptomModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={refresh}
+        mode="edit"
+        symptom={symptom}
+      />
+
+      <div className="space-y-4">
+
+        {/* HEADER CARD */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+          <h2 className="text-lg font-bold text-slate-800">Detalle</h2>
+
+          {/* TOP */}
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <Icon className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">
+                  {symptom.symptom?.name}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {symptom.symptom?.category}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setIsEditOpen(true)}
+                className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition"
+              >
+                Editar
+              </button>
+
+              <button
+                onClick={() => {
+                  const ok = confirm("¿Eliminar este síntoma?");
+                  if (!ok) return;
+
+                  onDelete?.(symptom.id);
+                }}
+              >
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          {/* INFO GRID */}
+          <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl text-center">
+            <div className="border-r border-slate-200 last:border-0">
+              <p className="text-[10px] uppercase font-bold text-slate-400">Fecha inicio</p>
+              <p className="text-sm font-bold mt-1">{symptom.start_date || "--"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-slate-400">Estado</p>
+              <p className="text-sm font-bold mt-1 text-emerald-600">Activo</p>
+            </div>
+          </div>
+        </div>
+
+        {/* TRACKING DIARIO */}
+        <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-4">
+          <h3 className="font-semibold text-slate-700">
+            Registro diario
+          </h3>
+
+          {/* 📅 selector */}
+          <SymptomDaySelector
+            startDate={symptom.start_date}
+            selectedDate={selectedDate}
+            onSelect={setSelectedDate}
+          />
+
+          {/* 🎚 intensidad */}
+          <div>
+            <div className="flex justify-between mb-2 text-sm">
+              <span className="text-slate-500">
+                Intensidad del día
+              </span>
+              <span className="font-bold text-primary">
+                {severity}/10
+              </span>
+            </div>
+
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={severity}
+              onChange={(e) => setSeverity(Number(e.target.value))}
+              className="w-full accent-primary cursor-pointer"
+            />
+          </div>
+
+          <p className="text-xs text-slate-400">
+            Guardado automático por día
+          </p>
+        </div>
+
+        {/* NOTAS */}
+        <div className="bg-white rounded-xl p-6 border border-slate-200 space-y-3">
+          <h3 className="font-semibold text-slate-700">
+            Notas
+          </h3>
+
+          <textarea
+            className="w-full border border-slate-200 rounded-lg p-3 text-sm min-h-[120px]"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Añadir notas..."
+          />
+
+          <p className="text-xs text-slate-400">
+            Guardado automático
+          </p>
+        </div>
+
+      </div>
+    </>
+  )
+}
+</file>
+
+<file path="features/symptoms/components/SymptomList.tsx">
+import SymptomCard from "./SymptomCard";
+
+export default function SymptomList({ symptoms, selected, onSelect }: any) {
+
+    return (
+        <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+            <h2 className="text-lg font-bold text-slate-800">Mis Síntomas</h2>
+
+            {symptoms.map((s: any) => (
+                <SymptomCard
+                    key={s.id}
+                    symptom={s}
+                    isSelected={selected?.id === s.id}
+                    onClick={() => onSelect(s.id)} 
+                />
+            ))}
+        </div>
+    )
+}
+</file>
+
+<file path="features/symptoms/components/SymptomModal.tsx">
+"use client"
+
+import { useEffect, useState } from "react"
+import BaseModal from "@/components/ui/BaseModal"
+import Input from "@/components/ui/Input"
+import Textarea from "@/components/ui/TextArea"
+import Select from "@/components/ui/Select"
+import FormField from "@/components/ui/FormField"
+
+import {
+  createUserSymptom,
+  updateUserSymptom,
+  searchSymptoms,
+  createCustomSymptom,
+} from "../services/symptomServices"
+
+export default function SymptomModal({
+  isOpen,
+  onClose,
+  onSuccess,
+  mode = "create",
+  symptom = null,
+}: any) {
+  const isEdit = mode === "edit"
+
+  // -----------------------------
+  // STATE
+  // -----------------------------
+  const [form, setForm] = useState({
+    // 🔥 usamos undefined en vez de null
+    symptom_id: undefined as number | undefined,
+    symptom_name: "",
+    start_date: "",
+    end_date: "",
+    notes: "",
+  })
+
+  const [catalog, setCatalog] = useState<any[]>([])
+  const [isCustom, setIsCustom] = useState(false)
+  const [isOngoing, setIsOngoing] = useState(true)
+  const [errors, setErrors] = useState<any>({})
+
+  // -----------------------------
+  // HELPERS
+  // -----------------------------
+  const handleChange = (field: string, value: any) => {
+    setForm((prev) => ({ ...prev, [field]: value }))
+    setErrors((prev: any) => ({
+      ...prev,
+      [field]: null,
+    }))
+  }
+
+  // -----------------------------
+  // LOAD CATALOG
+  // -----------------------------
+  useEffect(() => {
+    if (!isOpen) return
+
+    const load = async () => {
+      try {
+        const data = await searchSymptoms()
+
+        const sorted = data.sort((a: any, b: any) =>
+          a.name.localeCompare(b.name)
+        )
+
+        setCatalog(sorted)
+      } catch (err) {
+        console.error("Error cargando catálogo", err)
+      }
+    }
+
+    load()
+  }, [isOpen])
+
+  // -----------------------------
+  // SYNC EDIT MODE
+  // -----------------------------
+  useEffect(() => {
+    if (isEdit && symptom) {
+      setForm({
+        symptom_id: symptom.symptom?.id,
+        symptom_name: symptom.symptom?.name,
+        start_date: symptom.start_date || "",
+        end_date: symptom.end_date || "",
+        notes: symptom.notes || "",
+      })
+
+      setIsOngoing(!symptom.end_date)
+    }
+  }, [symptom, isEdit])
+
+  // -----------------------------
+  // RESET CREATE MODE
+  // -----------------------------
+  useEffect(() => {
+    if (isOpen && !isEdit) {
+      setForm({
+        symptom_id: undefined,
+        symptom_name: "",
+        start_date: "",
+        end_date: "",
+        notes: "",
+      })
+
+      setIsCustom(false)
+      setIsOngoing(true)
+      setErrors({})
+    }
+  }, [isOpen, isEdit])
+
+  // -----------------------------
+  // VALIDATION
+  // -----------------------------
+  const validate = () => {
+    const newErrors: any = {}
+
+    if (!isEdit) {
+      if (isCustom) {
+        if (!form.symptom_name?.trim()) {
+          newErrors.symptom_name = "Requerido"
+        }
+      } else {
+        if (!form.symptom_id) {
+          newErrors.symptom_id = "Requerido"
+        }
+      }
+    }
+
+    if (!form.start_date) {
+      newErrors.start_date = "Requerido"
+    }
+
+    if (
+      !isOngoing &&
+      form.end_date &&
+      form.start_date &&
+      form.end_date < form.start_date
+    ) {
+      newErrors.end_date = "Fecha inválida"
+    }
+
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
+
+  // -----------------------------
+  // SUBMIT
+  // -----------------------------
+  const handleSubmit = async () => {
+    if (!validate()) return
+
+    try {
+      let symptomId = form.symptom_id
+
+      // 🔥 crear en catálogo si es custom
+      if (!isEdit && isCustom) {
+        const newSymptom = await createCustomSymptom(
+          form.symptom_name.trim()
+        )
+        symptomId = newSymptom.id
+
+        // opcional: actualizar catálogo en caliente
+        setCatalog((prev) => [...prev, newSymptom])
+      }
+
+      // 🔥 guard clause segura
+      if (!symptomId) return
+
+      const payload = {
+        symptom_id: symptomId, // ✅ ahora siempre number
+        start_date: form.start_date,
+        end_date: isOngoing ? null : form.end_date,
+        notes: form.notes,
+      }
+
+      if (isEdit) {
+        await updateUserSymptom(symptom.id, payload)
+      } else {
+        await createUserSymptom(payload)
+      }
+
+      onSuccess?.()
+      onClose()
+    } catch (err) {
+      console.error("Error guardando síntoma", err)
+    }
+  }
+
+  // -----------------------------
+  // UI
+  // -----------------------------
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={isEdit ? "Editar síntoma" : "Añadir síntoma"}
+      footer={
+        <>
+          <button onClick={onClose}>Cancelar</button>
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-2 rounded-lg bg-primary text-white"
+          >
+            Guardar
+          </button>
+        </>
+      }
+    >
+      {/* SYMPTOM SELECT / CUSTOM */}
+      <FormField
+        label="Síntoma"
+        error={isCustom ? errors.symptom_name : errors.symptom_id}
+      >
+        <div className="flex gap-2">
+          {!isCustom ? (
+            <Select
+              value={form.symptom_id ?? ""}
+              disabled={isEdit}
+              onChange={(e: any) => {
+                const selected = catalog.find(
+                  (s) => s.id === Number(e.target.value)
+                )
+
+                handleChange("symptom_id", selected?.id)
+                handleChange("symptom_name", selected?.name)
+              }}
+              options={catalog.map((s) => ({
+                value: s.id,
+                label: s.name,
+              }))}
+              error={errors.symptom_id}
+            />
+          ) : (
+            <Input
+              type="text"
+              placeholder="Nombre del síntoma"
+              value={form.symptom_name}
+              onChange={(e: any) =>
+                handleChange("symptom_name", e.target.value)
+              }
+              error={errors.symptom_name}
+            />
+          )}
+
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsCustom(!isCustom)
+
+                // 🔥 usar undefined en vez de null
+                handleChange("symptom_id", undefined)
+                handleChange("symptom_name", "")
+
+                setErrors((prev: any) => ({
+                  ...prev,
+                  symptom_id: null,
+                  symptom_name: null,
+                }))
+              }}
+              className="px-3 rounded-lg border text-sm hover:bg-slate-50"
+            >
+              {isCustom ? "Usar lista" : "+ Nuevo"}
+            </button>
+          )}
+        </div>
+      </FormField>
+
+      {/* DATES */}
+      <div className="grid grid-cols-2 gap-3">
+        <FormField label="Fecha inicio" error={errors.start_date}>
+          <Input
+            type="date"
+            value={form.start_date}
+            onChange={(e: any) =>
+              handleChange("start_date", e.target.value)
+            }
+          />
+        </FormField>
+
+        <FormField label="Fecha fin" error={errors.end_date}>
+          <Input
+            type="date"
+            value={form.end_date}
+            disabled={isOngoing}
+            onChange={(e: any) =>
+              handleChange("end_date", e.target.value)
+            }
+          />
+        </FormField>
+      </div>
+
+      {/* CHECK vigente */}
+      <div className="flex items-center gap-2">
+        <input
+          type="checkbox"
+          checked={isOngoing}
+          onChange={(e) => setIsOngoing(e.target.checked)}
+        />
+        <span className="text-sm text-slate-700">
+          Sigue presente
+        </span>
+      </div>
+
+      {/* NOTES */}
+      <FormField label="Notas">
+        <Textarea
+          value={form.notes}
+          onChange={(e: any) =>
+            handleChange("notes", e.target.value)
+          }
+          placeholder="Ej: empeora en la noche..."
+        />
+      </FormField>
+    </BaseModal>
+  )
+}
+</file>
+
+<file path="features/symptoms/hooks/useSymptomDaily.ts">
+import { useEffect, useState } from "react"
+import { useDebounce } from "@/hooks/useDebounce"
+import {
+  getDaily,
+  upsertDaily,
+} from "../services/symptomServices"
+
+export function useSymptomDaily(symptomId: number, date: Date) {
+  const [severity, setSeverity] = useState(1)
+  const debouncedSeverity = useDebounce(severity, 500)
+
+  const formattedDate = date.toISOString().split("T")[0]
+
+  // 🔄 load
+  useEffect(() => {
+    if (!symptomId) return
+
+    const load = async () => {
+      try {
+        const data = await getDaily(symptomId, formattedDate)
+        setSeverity(data?.severity || 1)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    load()
+  }, [symptomId, formattedDate])
+
+  // 💾 autosave
+  useEffect(() => {
+    if (!symptomId) return
+
+    const save = async () => {
+      try {
+        await upsertDaily(symptomId, formattedDate, debouncedSeverity)
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    save()
+  }, [debouncedSeverity, symptomId, formattedDate])
+
+  return { severity, setSeverity }
+}
+</file>
+
+<file path="features/symptoms/hooks/useSymptomDetail.ts">
+"use client"
+
+import { useEffect, useRef, useState } from "react"
+import { useDebounce } from "@/hooks/useDebounce"
+import { updateUserSymptom } from "../services/symptomServices"
+
+export function useSymptomDetail(symptom: any) {
+  const [notes, setNotes] = useState("")
+
+  const debouncedNotes = useDebounce(notes, 800)
+
+  // 🔥 para evitar autosave en mount
+  const isFirstRender = useRef(true)
+
+  // -----------------------------
+  // SYNC INICIAL
+  // -----------------------------
+  useEffect(() => {
+    if (symptom) {
+      setNotes(symptom.notes || "")
+    }
+  }, [symptom])
+
+
+  // -----------------------------
+  // AUTOSAVE NOTES
+  // -----------------------------
+  useEffect(() => {
+    if (!symptom) return
+
+    if (isFirstRender.current) return
+
+    const update = async () => {
+      try {
+        await updateUserSymptom(symptom.id, {
+          notes: debouncedNotes,
+        })
+      } catch (err) {
+        console.error("Error notas", err)
+      }
+    }
+
+    update()
+  }, [debouncedNotes, symptom?.id])
+
+  // 🔥 marcar que ya pasó el primer render
+  useEffect(() => {
+    isFirstRender.current = false
+  }, [])
+
+  return {
+    notes,
+    setNotes,
+  }
+}
+</file>
+
+<file path="features/symptoms/hooks/useUserSymptom.tsx">
+"use client"
+
+import { useEffect, useState, useCallback, useMemo } from "react"
+import {
+  getUserSymptoms,
+  deleteUserSymptom,
+} from "../services/symptomServices"
+
+export function useUserSymptoms(initialSelectedId: number | null = null) {
+  const [symptoms, setSymptoms] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId)
+  const [loading, setLoading] = useState(false)
+
+  // 🔄 fetch
+  const fetchSymptoms = useCallback(async () => {
+    try {
+      setLoading(true)
+
+      const data = await getUserSymptoms()
+
+      setSymptoms(data)
+      setFiltered(data)
+
+      // 🧠 si no hay selected aún, usar initial
+      if (!selectedId && data.length > 0) {
+        setSelectedId(data[0].id)
+      }
+
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }, [initialSelectedId, selectedId])
+
+  useEffect(() => {
+    fetchSymptoms()
+  }, [fetchSymptoms])
+
+  // 🧠 derivar selected SIEMPRE desde symptoms
+  const selected = useMemo(() => {
+    return symptoms.find((s) => s.id === selectedId) || null
+  }, [symptoms, selectedId])
+
+  // 🔍 search
+  const search = useCallback((query: string) => {
+    if (!query) {
+      setFiltered(symptoms)
+      return
+    }
+
+    const lower = query.toLowerCase()
+
+    const filteredData = symptoms.filter((s: any) =>
+      s.symptom?.name?.toLowerCase().includes(lower)
+    )
+
+    setFiltered(filteredData)
+  }, [symptoms])
+
+  // 🗑 delete
+  const remove = useCallback(async (id: number) => {
+    try {
+      await deleteUserSymptom(id)
+
+      setSymptoms((prev) => prev.filter((s) => s.id !== id))
+      setFiltered((prev) => prev.filter((s) => s.id !== id))
+
+      // si borras el seleccionado → limpiar
+      if (selectedId === id) {
+        setSelectedId(null)
+      }
+
+    } catch (err) {
+      console.error(err)
+    }
+  }, [selectedId])
+
+  return {
+    symptoms,
+    filtered,
+    selected,
+    setSelected: setSelectedId, 
+    fetchSymptoms,
+    search,
+    remove,
+    loading,
+  }
+}
+</file>
+
+<file path="features/symptoms/services/symptomServices.ts">
+import { apiFetch } from "@/lib/api"
+
+// -----------------------------
+// TYPES
+// -----------------------------
+
+type CreateUserSymptomPayload = {
+  symptom_id: number
+  severity?: number
+  notes?: string
+  is_current?: boolean
+}
+
+type DailyPayload = {
+  date: string
+  severity: number
+}
+
+// -----------------------------
+// USER SYMPTOMS
+// -----------------------------
+
+export const getUserSymptoms = () => {
+  return apiFetch("/user-symptoms/")
+}
+
+export const getUserSymptom = (id: number) => {
+  return apiFetch(`/user-symptoms/${id}/`)
+}
+
+export const createUserSymptom = (data: CreateUserSymptomPayload) => {
+  return apiFetch("/user-symptoms/", {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+export const updateUserSymptom = (
+  id: number,
+  data: Partial<CreateUserSymptomPayload>
+) => {
+  return apiFetch(`/user-symptoms/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
+export const deleteUserSymptom = (id: number) => {
+  return apiFetch(`/user-symptoms/${id}/`, {
+    method: "DELETE",
+  })
+}
+
+// -----------------------------
+// SYMPTOM CATALOG
+// -----------------------------
+
+export const searchSymptoms = () => {
+  return apiFetch("/symptoms/")
+}
+
+export const createCustomSymptom = (name: string) => {
+  return apiFetch("/symptoms/", {
+    method: "POST",
+    body: JSON.stringify({
+      name,
+      is_custom: true,
+    }),
+  })
+}
+
+// -----------------------------
+// DAILY RECORDS (CORE)
+// -----------------------------
+
+// 🔹 obtener registro de un día específico
+export const getDaily = (symptomId: number, date: string) => {
+  return apiFetch(
+    `/user-symptoms/${symptomId}/daily/by-date?date=${date}`
+  )
+}
+
+// 🔹 UPSERT (crear o actualizar automáticamente)
+export const upsertDaily = async (
+  symptomId: number,
+  date: string,
+  severity: number
+) => {
+  return apiFetch(`/user-symptoms/${symptomId}/daily`, {
+    method: "POST",
+    body: JSON.stringify({
+      date,
+      severity,
+    }),
+  })
+}
+
+// -----------------------------
+// DAILY RECORDS (EXTRA / FUTURO)
+// -----------------------------
+
+// 🔹 obtener todos los registros (para gráficos o heatmap)
+export const getDailyRecords = (symptomId: number) => {
+  return apiFetch(`/user-symptoms/${symptomId}/daily`)
+}
+
+// 🔹 crear manual (poco usado si tienes upsert)
+export const createDailyRecord = (
+  symptomId: number,
+  data: DailyPayload
+) => {
+  return apiFetch(`/user-symptoms/${symptomId}/daily`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  })
+}
+
+// 🔹 actualizar manual
+export const updateDailyRecord = (
+  symptomId: number,
+  dailyId: number,
+  data: Partial<DailyPayload>
+) => {
+  return apiFetch(`/user-symptoms/${symptomId}/daily/${dailyId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  })
+}
+
+// 🔹 eliminar registro
+export const deleteDailyRecord = (
+  symptomId: number,
+  dailyId: number
+) => {
+  return apiFetch(`/user-symptoms/${symptomId}/daily/${dailyId}`, {
+    method: "DELETE",
+  })
+}
+
+// -----------------------------
+// UTILITIES
+// -----------------------------
+
+// 🔹 helper para formatear fecha (clave para evitar bugs)
+export const formatDate = (date: Date) => {
+  return date.toISOString().split("T")[0]
+}
+</file>
+
+<file path="hooks/useDebounce.ts">
+import { useEffect, useState } from "react"
+
+export function useDebounce(value: any, delay: number) {
+  const [debounced, setDebounced] = useState(value)
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebounced(value)
+    }, delay)
+
+    return () => clearTimeout(handler)
+  }, [value, delay])
+
+  return debounced
+}
+</file>
+
+<file path="lib/symptomIcons.ts">
+import {
+  Brain,
+  Thermometer,
+  Wind,
+  Activity,
+  Droplets,
+  Soup,
+  Bed,
+  HeartPulse,
+  AlertCircle,
+  Moon,
+  Frown,
+  SmilePlus,
+} from "lucide-react"
+
+export const symptomIcons: Record<string, any> = {
+  "Dolor de cabeza": Brain,
+  "Fiebre": Thermometer,
+  "Tos": Wind,
+  "Dolor de garganta": Wind,
+  "Congestión nasal": Wind,
+  "Fatiga": Bed,
+  "Náuseas": AlertCircle,
+  "Vómitos": AlertCircle,
+  "Diarrea": Droplets,
+  "Dolor abdominal": Activity,
+  "Mareos": Activity,
+  "Dolor muscular": Activity,
+  "Dolor articular": Activity,
+  "Escalofríos": Thermometer,
+  "Sudoración excesiva": Droplets,
+  "Pérdida de apetito": Soup,
+  "Dificultad para respirar": Wind,
+  "Palpitaciones": HeartPulse,
+  "Erupción cutánea": AlertCircle,
+  "Picazón": AlertCircle,
+  "Insomnio": Moon,
+  "Ansiedad": Frown,
+  "Depresión": SmilePlus,
+}
+
+export function getSymptomIcon(name: string) {
+  return symptomIcons[name] || AlertCircle
+}
+</file>
+
+<file path="next-env.d.ts">
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/types/routes.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
 </file>
 
 <file path="app/dashboard/profile/page.tsx">
@@ -211,6 +1408,100 @@ export default function OnboardingProfilePage() {
       <ProfileForm mode="onboarding" />
     </div>
   )
+}
+</file>
+
+<file path="components/FeatureCard.tsx">
+import { motion } from "motion/react";
+
+export function FeatureCard({ 
+  icon, 
+  title, 
+  description 
+}: { 
+  icon: React.ReactNode; 
+  title: string; 
+  description: string; 
+}) {
+  return (
+    <motion.div 
+      className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:border-teal-200 hover:bg-teal-50/30 transition-all group"
+      whileHover={{ y: -5 }}
+    >
+      <div className="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-teal-600 transition-colors">
+        <span className="text-teal-600 text-3xl group-hover:text-white flex items-center justify-center">
+          {icon}
+        </span>
+      </div>
+      <h3 className="text-2xl font-bold mb-4 text-gray-900">{title}</h3>
+      <p className="text-gray-600 leading-relaxed">
+        {description}
+      </p>
+    </motion.div>
+  );
+}
+</file>
+
+<file path="components/RegisterModal.tsx">
+"use client";
+
+import { useEffect } from "react";
+
+export default function RegisterModal({ open, onClose }: any) {
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={onClose} // click fuera cierra
+    >
+      <div
+        className="w-full max-w-[480px] bg-white rounded-xl shadow-xl"
+        onClick={(e) => e.stopPropagation()} // evita cerrar si clic dentro
+      >
+        {/* HEADER */}
+        <div className="flex items-center justify-between border-b px-8 py-6">
+          <h2 className="text-xl font-bold">MiFichaMed</h2>
+
+          <button
+            onClick={onClose}
+            className="h-10 w-10 flex items-center justify-center rounded-lg bg-slate-100"
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* BODY */}
+        <div className="px-8 pt-8 pb-10">
+          <h1 className="text-3xl font-bold mb-4">Crea tu cuenta</h1>
+
+          <form className="space-y-5">
+            <input
+              className="w-full border rounded-lg px-4 py-3"
+              placeholder="Correo"
+              type="email"
+            />
+
+            <input
+              className="w-full border rounded-lg px-4 py-3"
+              placeholder="Contraseña"
+              type="password"
+            />
+
+            <input
+              className="w-full border rounded-lg px-4 py-3"
+              placeholder="Confirmar contraseña"
+              type="password"
+            />
+
+            <button className="w-full bg-teal-600 text-white py-4 rounded-lg font-bold">
+              Registrarse
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 }
 </file>
 
@@ -273,6 +1564,32 @@ export default function BaseModal({
 }
 </file>
 
+<file path="components/ui/DashboardCard.tsx">
+import { Plus } from "lucide-react";
+
+export default function DashboardCard({ title, icon: Icon, iconColor, children, footerAction }: any) {
+  return (
+    <div className="rounded-2xl border border-teal-100 bg-white p-6 shadow-sm">
+      <div className="mb-6 flex items-center justify-between border-b border-teal-50 pb-4">
+        <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+          <Icon className={`w-5 h-5 ${iconColor}`} />
+          {title}
+        </h3>
+        <button className="flex items-center gap-1 rounded-lg bg-teal-500/10 px-2 py-1 text-xs font-bold text-teal-700 hover:bg-teal-500/20 transition-colors">
+          <Plus className="w-3 h-3" /> Añadir
+        </button>
+      </div>
+      <div className="space-y-4">{children}</div>
+      {footerAction && (
+        <button className="w-full text-center text-sm font-bold text-teal-600 hover:text-teal-700 py-2 mt-2">
+          {footerAction}
+        </button>
+      )}
+    </div>
+  );
+}
+</file>
+
 <file path="components/ui/FormField.tsx">
 export default function FormField({
   label,
@@ -311,7 +1628,7 @@ export default function Input({
     "w-full h-11 px-4 rounded-lg border bg-white outline-none transition"
 
   const normal =
-    "border-slate-200 focus:ring-2 focus:ring-[var(--accent-mint)]"
+    "border-slate-200 focus:ring-2 focus:ring-secondary"
 
   const errorStyle = "border-red-400 focus:ring-2 focus:ring-red-300"
 
@@ -329,6 +1646,25 @@ export default function Input({
 }
 </file>
 
+<file path="components/ui/MetricCard.tsx">
+export default function MetricCard({ label, value, unit, status }: any) {
+  return (
+    <div className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">{label}</p>
+      <div className="flex items-baseline gap-1">
+        <span className="text-2xl font-black text-slate-800">{value}</span>
+        <span className="text-sm font-medium text-slate-500">{unit}</span>
+        {status && (
+          <span className="ml-1 text-sm font-medium text-teal-500 bg-teal-50 px-1.5 rounded">
+            {status}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+</file>
+
 <file path="components/ui/Select.tsx">
 export default function Select({
   value,
@@ -341,7 +1677,7 @@ export default function Select({
     "w-full h-11 px-4 rounded-lg border bg-white outline-none transition"
 
   const normal =
-    "border-slate-200 focus:ring-2 focus:ring-[var(--accent-mint)]"
+    "border-slate-200 focus:ring-2 focus:ring-secondary"
 
   const errorStyle = "border-red-400 focus:ring-2 focus:ring-red-300"
 
@@ -387,7 +1723,7 @@ export default function StatusSelector({
             className={`h-12 rounded-xl border-2 text-sm transition
               ${
                 selected
-                  ? "border-[var(--dark-mint)] bg-[var(--primary-mint)] text-[var(--dark-mint)]"
+                  ? "border-primary bg-muted text-primary"
                   : "border-slate-200 text-slate-500 hover:border-slate-300"
               }
             `}
@@ -418,136 +1754,126 @@ export default function Textarea({
 }
 </file>
 
-<file path="features/conditions/components/ConditionCard.tsx">
-export default function ConditionCard({ condition, isSelected, onClick }: any) {
+<file path="eslint.config.mjs">
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
 
-  const statusColors: any = {
-    active: "bg-green-100 text-green-700",
-    chronic: "bg-yellow-100 text-yellow-700",
-    resolved: "bg-gray-100 text-gray-600",
-    remission: "bg-blue-100 text-blue-700",
-  }
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+</file>
+
+<file path="features/conditions/components/ConditionCard.tsx">
+import { getCategoryIcon } from "@/lib/categoryIcons"
+
+type ConditionCardProps = {
+  condition: any
+  isSelected: boolean
+  onClick: () => void
+}
+
+export default function ConditionCard({
+  condition,
+  isSelected,
+  onClick,
+}: ConditionCardProps) {
+
+  const statusConfig = {
+    active: {
+      label: "Activa",
+      style: "bg-emerald-100 text-emerald-700",
+    },
+    chronic: {
+      label: "Crónica",
+      style: "bg-amber-100 text-amber-700",
+    },
+    resolved: {
+      label: "Resuelta",
+      style: "bg-slate-100 text-slate-600",
+    },
+    remission: {
+      label: "Remisión",
+      style: "bg-blue-100 text-blue-700",
+    },
+  } as const
+
+  const status = statusConfig[condition.status as keyof typeof statusConfig]
+
+  const Icon = getCategoryIcon(condition.condition?.category)
 
   return (
     <div
       onClick={onClick}
       className={`
-        p-4 rounded-xl cursor-pointer transition-all border
-        ${isSelected ? "border-primary bg-white shadow" : "border-slate-200"}
+        relative p-4 rounded-xl cursor-pointer transition-all border
+        group
+        ${
+          isSelected
+            ? "border-primary bg-white shadow-sm"
+            : "border-slate-200 bg-white hover:border-primary/40 hover:shadow-sm"
+        }
       `}
     >
-      <div className="flex justify-between">
-        <h4 className="font-bold">{condition.condition?.name}</h4>
+      {/* Barra lateral de selección */}
+      {isSelected && (
+        <div className="absolute right-0 top-0 bottom-0 w-1 bg-primary rounded-r-xl" />
+      )}
 
-        <span className={`text-xs px-2 py-1 rounded-full font-bold ${statusColors[condition.status]}`}>
-          {condition.status}
-        </span>
-      </div>
+      <div className="flex items-start gap-3">
 
-      <p className="text-xs text-slate-500 mt-1">
-        {condition.start_date || "Sin fecha"}
-      </p>
-    </div>
-  )
-}
-</file>
+        {/* ICONO */}
+        <div
+          className={`
+            w-10 h-10 rounded-lg flex items-center justify-center transition
+            ${
+              isSelected
+                ? "bg-emerald-200 text-emerald-700"
+                : "bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200"
+            }
+          `}
+        >
+          <Icon className="w-5 h-5" />
+        </div>
 
-<file path="features/conditions/components/ConditionDetail.tsx">
-"use client"
+        {/* CONTENIDO */}
+        <div className="flex-1 min-w-0">
 
-import { useState } from "react"
-import ConditionModal from "@/features/conditions/components/ConditionModal"
+          <div className="flex justify-between items-start gap-2">
 
-export default function ConditionDetail({ condition, refresh }: any) {
-
-  const [isEditOpen, setIsEditOpen] = useState(false)
-
-  if (!condition) {
-    return (
-      <div className="p-6 text-slate-400">
-        Selecciona una condición
-      </div>
-    )
-  }
-
-  const statusLabel: any = {
-    active: "Activa",
-    chronic: "Crónica",
-    resolved: "Resuelta",
-    remission: "En Remisión",
-  }
-
-  return (
-    <div className="space-y-6">
-
-      {/* MODAL EDIT */}
-      <ConditionModal
-        isOpen={isEditOpen}
-        onClose={() => setIsEditOpen(false)}
-        onSuccess={refresh}
-        mode="edit"
-        condition={condition}
-      />
-
-      {/* HEADER */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-
-        <div className="flex justify-between items-center mb-6">
-
-          <div>
-            <h2 className="text-2xl font-bold">
+            <h4 className="font-semibold text-slate-800 leading-tight truncate">
               {condition.condition?.name}
-            </h2>
+            </h4>
 
-            <p className="text-slate-500">
-              {condition.condition?.category}
-            </p>
+            {status && (
+              <span
+                className={`
+                  text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap
+                  ${status.style}
+                `}
+              >
+                {status.label}
+              </span>
+            )}
           </div>
 
-          <button
-            onClick={() => setIsEditOpen(true)}
-            className="px-4 py-2 border rounded-lg text-sm font-bold hover:bg-slate-50 transition"
-          >
-            ✏️ Editar
-          </button>
-        </div>
-
-        {/* INFO GRID */}
-        <div className="grid grid-cols-3 gap-4 text-center bg-slate-50 p-4 rounded-lg">
-
-          <div>
-            <p className="text-xs text-slate-400">Inicio</p>
-            <p className="font-bold">
-              {condition.start_date || "--"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs text-slate-400">Fin</p>
-            <p className="font-bold">
-              {condition.end_date || "--"}
-            </p>
-          </div>
-
-          <div>
-            <p className="text-xs text-slate-400">Estado</p>
-            <p className="font-bold">
-              {statusLabel[condition.status]}
-            </p>
-          </div>
+          <p className="text-xs text-slate-500 mt-1">
+            {condition.start_date || "Sin fecha"}
+          </p>
 
         </div>
       </div>
-
-      {/* NOTAS */}
-      <div className="bg-white rounded-xl p-6 shadow-sm border">
-        <h3 className="font-bold mb-2">Notas</h3>
-
-        <p className="text-sm text-slate-600">
-          {condition.notes || "Sin notas"}
-        </p>
-      </div>
-
     </div>
   )
 }
@@ -559,15 +1885,15 @@ import ConditionCard from "./ConditionCard"
 export default function ConditionList({ conditions, selected, onSelect }: any) {
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Mis Enfermedades</h2>
+    <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm space-y-4">
+      <h2 className="text-lg font-bold text-slate-800">Mis Enfermedades</h2>
 
       {conditions.map((c: any) => (
         <ConditionCard
           key={c.id}
           condition={c}
           isSelected={selected?.id === c.id}
-          onClick={() => onSelect(c)}
+          onClick={() => onSelect(c.id)}
         />
       ))}
     </div>
@@ -621,7 +1947,8 @@ export default function ConditionModal({
 
   const { data: conditions } = useFetch(
     () => getConditionsByCategory(form.category),
-    !!form.category
+    !!form.category,
+    [form.category] 
   )
 
   // 🧠 cargar datos edit
@@ -730,7 +2057,7 @@ export default function ConditionModal({
             <button onClick={onClose}>Cancelar</button>
             <button
               onClick={handleSubmit}
-              className="px-6 py-2 rounded-lg bg-[var(--dark-mint)] text-white"
+              className="px-6 py-2 rounded-lg bg-primary text-white"
             >
               Guardar
             </button>
@@ -746,6 +2073,7 @@ export default function ConditionModal({
             onChange={(e: any) => {
               handleChange("category", e.target.value)
               handleChange("condition_id", null)
+              handleChange("condition_name", "")
 
               setErrors((prev: any) => ({
                 ...prev,
@@ -892,127 +2220,6 @@ export default function ConditionModal({
 }
 </file>
 
-<file path="features/conditions/components/ConditionsHeader.tsx">
-"use client"
-
-import { useState, useEffect } from "react"
-import { Search, Plus } from "lucide-react"
-
-export default function ConditionsHeader({ onSearch, onAdd }: any) {
-
-  const [query, setQuery] = useState("")
-
-  // Debounce, solo busca si no hay cambio en el texto por 300 ms, evita lag al teclear y solo busca si se deja de escribir
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onSearch(query)
-    }, 300)
-
-    return () => clearTimeout(timeout)
-  }, [query])
-
-  return (
-    <div className="flex items-center justify-between mb-6">
-
-      {/* LEFT */}
-      <div className="text-sm text-slate-400">
-        MiFichaMed / <span className="font-medium text-slate-900">Enfermedades</span>
-      </div>
-
-      {/* RIGHT */}
-      <div className="flex items-center gap-4">
-
-        {/* SEARCH */}
-       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ej: Diabetes"
-          className="bg-slate-100 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64"
-        />
-      </div>
-
-        {/* BUTTON DE AGREGAR */}
-        <button
-          onClick={onAdd}
-          className="bg-[var(--dark-mint)] hover:bg-[var(--accent-mint)] text-white font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          Añadir
-      </button>
-
-      </div>
-    </div>
-  )
-}
-</file>
-
-<file path="features/conditions/hooks/useUserConditions.tsx">
-"use client"
-
-import { useState, useEffect } from "react"
-import { apiFetch } from "@/lib/api"
-
-export function useUserConditions() {
-  const [conditions, setConditions] = useState<any[]>([])
-  const [filtered, setFiltered] = useState<any[]>([])
-  const [selected, setSelected] = useState<any | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const fetchConditions = async () => {
-    try {
-      setLoading(true)
-
-      const data = await apiFetch("/user-conditions")
-
-      setConditions(data)
-      setFiltered(data)
-
-      setSelected((prev: any) =>
-        prev
-            ? data.find((c: any) => c.id === prev.id) || data[0]
-            : data[0]
-        )
-
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  useEffect(() => {
-    fetchConditions()
-  }, [])
-
-  const search = (query: string) => {
-    const filteredData = conditions.filter((c) =>
-      c.condition?.name?.toLowerCase().includes(query.toLowerCase())
-    )
-
-    setFiltered(filteredData)
-
-    if (filteredData.length > 0) {
-      setSelected(filteredData[0])
-    } else {
-      setSelected(null)
-    }
-  }
-
-  return {
-    conditions,
-    filtered,
-    selected,
-    setSelected,
-    fetchConditions,
-    search,
-    loading,
-  }
-}
-</file>
-
 <file path="features/conditions/services/conditionServices.ts">
 import { apiFetch } from "@/lib/api"
 
@@ -1027,7 +2234,7 @@ export const getConditionsByCategory = (category: string) => {
 
 // 📌 Condición custom
 export const createCondition = async (data: any) => {
-  return apiFetch("/conditions", {
+  return apiFetch("/conditions/", {
     method: "POST",
     body: JSON.stringify(data),
   })
@@ -1035,11 +2242,11 @@ export const createCondition = async (data: any) => {
 
 // 📌 Usuario
 export const getUserConditions = () => {
-  return apiFetch("/user-conditions")
+  return apiFetch("/user-conditions/")
 }
 
 export const createUserCondition = (data: any) => {
-  return apiFetch("/user-conditions", {
+  return apiFetch("/user-conditions/", {
     method: "POST",
     body: JSON.stringify(data),
   })
@@ -1081,48 +2288,6 @@ export const conditionStatusLabels: Record<string, string> = {
   chronic: "Crónica",
   resolved: "Resuelta",
   remission: "Remisión",
-}
-</file>
-
-<file path="features/dashboard/types.ts">
-export type Condition = {
-  id: number
-  condition: {
-    name: string
-  }
-  treatments: Treatment[]
-}
-
-export type Treatment = {
-  id: number
-  medication: {
-    name: string
-  }
-}
-
-export type Symptom = {
-  id: number
-  symptom: {
-    name: string
-  }
-}
-
-export type Allergy = {
-  id: number
-  allergy: {
-    name: string
-  }
-}
-
-export type DashboardData = {
-  profile: {
-    full_name: string
-    weight: number | null
-    height: number | null
-  }
-  active_conditions: Condition[]
-  active_symptoms: Symptom[]
-  active_allergies: Allergy[]
 }
 </file>
 
@@ -1330,7 +2495,11 @@ export default function ProfileForm({ mode, initialData }: ProfileFormProps) {
 <file path="hooks/useFetch.ts">
 import { useEffect, useState } from "react"
 
-export function useFetch(fetchFn: () => Promise<any>, enabled = true) {
+export function useFetch(
+  fetchFn: () => Promise<any>,
+  enabled = true,
+  deps: any[] = [] // 🔥 nuevo
+) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<any>(null)
@@ -1353,9 +2522,74 @@ export function useFetch(fetchFn: () => Promise<any>, enabled = true) {
   useEffect(() => {
     if (!enabled) return
     fetchData()
-  }, [enabled])
+  }, [enabled, ...deps]) // 🔥 CLAVE
 
   return { data, loading, error, refetch: fetchData }
+}
+</file>
+
+<file path="lib/categoryIcons.ts">
+import {
+  HeartPulse,
+  Wind,
+  Activity,
+  Apple,
+  Brain,
+  Bone,
+  Scan,
+  ShieldAlert,
+  Smile,
+  Droplets,
+  Ribbon,
+  Bug,
+  Eye,
+  LucideIcon,
+} from "lucide-react"
+
+type CategoryKey =
+  | "cardiovascular"
+  | "respiratory"
+  | "endocrine_metabolic"
+  | "digestive"
+  | "neurological"
+  | "musculoskeletal"
+  | "dermatological"
+  | "immune_allergic"
+  | "mental_health"
+  | "genitourinary"
+  | "oncological"
+  | "infectious"
+  | "sensory"
+
+export const categoryIconMap: Record<CategoryKey, LucideIcon> = {
+  cardiovascular: HeartPulse,       
+  respiratory: Wind,                 
+  endocrine_metabolic: Activity,     
+  digestive: Apple,                  
+  neurological: Brain,               
+  musculoskeletal: Bone,             
+  dermatological: Scan,              
+  immune_allergic: ShieldAlert,      
+  mental_health: Smile,              
+  genitourinary: Droplets,           
+  oncological: Ribbon,               
+  infectious: Bug,                   
+  sensory: Eye,                      
+}
+
+function normalizeCategory(category: string): CategoryKey {
+  return category
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") as CategoryKey
+}
+
+export function getCategoryIcon(category?: string): LucideIcon {
+  if (!category) return Activity
+
+  const normalized = normalizeCategory(category)
+
+  return categoryIconMap[normalized] || Activity
 }
 </file>
 
@@ -1367,13 +2601,252 @@ export async function getDashboard() {
 }
 </file>
 
-<file path="next-env.d.ts">
-/// <reference types="next" />
-/// <reference types="next/image-types/global" />
-import "./.next/dev/types/routes.d.ts";
+<file path="next.config.ts">
+import type { NextConfig } from "next";
 
-// NOTE: This file should not be edited
-// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+const nextConfig: NextConfig = {
+  /* config options here */
+};
+
+export default nextConfig;
+</file>
+
+<file path="postcss.config.mjs">
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+</file>
+
+<file path="public/file.svg">
+<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
+</file>
+
+<file path="public/globe.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
+</file>
+
+<file path="public/next.svg">
+<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
+</file>
+
+<file path="public/vercel.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
+</file>
+
+<file path="public/window.svg">
+<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
+</file>
+
+<file path="README.md">
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+</file>
+
+<file path="tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+</file>
+
+<file path=".gitignore">
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files (can opt-in for committing if needed)
+.env*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+repomix-output.xml
+</file>
+
+<file path="app/dashboard/conditions/page.tsx">
+"use client"
+
+import { useState } from "react"
+import { useSearchParams } from "next/navigation"
+
+import ConditionList from "@/features/conditions/components/ConditionList"
+import ConditionDetail from "@/features/conditions/components/ConditionDetail"
+import DashboardHeader from "@/components/ui/DashboardHeader"
+import ConditionModal from "@/features/conditions/components/ConditionModal"
+import { useUserConditions } from "@/features/conditions/hooks/useUserConditions"
+
+export default function ConditionsPage() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
+  const searchParams = useSearchParams()
+  const selectedFromUrl = searchParams.get("selected")
+
+  const {
+    filtered,
+    selected,
+    setSelected,
+    fetchConditions,
+    setSearch,
+    remove,
+  } = useUserConditions(
+    selectedFromUrl ? Number(selectedFromUrl) : null
+  )
+
+  // -----------------------------
+  // HANDLERS
+  // -----------------------------
+  const handleSearch = (value: string) => {
+    setSearch(value)
+  }
+
+  const handleAdd = () => {
+    setIsModalOpen(true)
+  }
+
+  return (
+    <div className="p-8 bg-slate-50 min-h-screen">
+      <div className="max-w-7xl mx-auto space-y-6">
+
+        <ConditionModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={fetchConditions}
+        />
+
+        {/* HEADER */}
+        <DashboardHeader
+          title="Enfermedades"
+          placeholder="Ej: Diabetes"
+          onSearch={handleSearch}
+          onAdd={handleAdd}
+        />
+
+        {/* CONTENEDOR */}
+        <div className="flex gap-6 items-start">
+
+          {/* LIST */}
+          <div className="w-2/5">
+            <ConditionList
+              conditions={filtered}
+              selected={selected}
+              onSelect={setSelected}
+            />
+          </div>
+
+          {/* DETAIL */}
+          <div className="w-3/5">
+            <ConditionDetail
+              condition={selected}
+              refresh={fetchConditions}
+              onDelete={remove}
+            />
+          </div>
+          
+
+        </div>
+      </div>
+    </div>
+  )
+}
 </file>
 
 <file path="app/dashboard/layout.tsx">
@@ -1427,9 +2900,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.className} antialiased`}>
         {children}
       </body>
     </html>
@@ -1511,37 +2982,6 @@ export default function AuthModal({ open, onClose, mode, setMode }: any) {
         </div>
       </div>
     </div>
-  );
-}
-</file>
-
-<file path="components/FeatureCard.tsx">
-import { motion } from "motion/react";
-
-export function FeatureCard({ 
-  icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ReactNode; 
-  title: string; 
-  description: string; 
-}) {
-  return (
-    <motion.div 
-      className="p-8 rounded-3xl bg-slate-50 border border-slate-100 hover:border-teal-200 hover:bg-teal-50/30 transition-all group"
-      whileHover={{ y: -5 }}
-    >
-      <div className="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-teal-600 transition-colors">
-        <span className="text-teal-600 text-3xl group-hover:text-white flex items-center justify-center">
-          {icon}
-        </span>
-      </div>
-      <h3 className="text-2xl font-bold mb-4 text-gray-900">{title}</h3>
-      <p className="text-gray-600 leading-relaxed">
-        {description}
-      </p>
-    </motion.div>
   );
 }
 </file>
@@ -1824,568 +3264,330 @@ export default function RegisterForm(){
 }
 </file>
 
-<file path="components/RegisterModal.tsx">
-"use client";
-
-import { useEffect } from "react";
-
-export default function RegisterModal({ open, onClose }: any) {
-  if (!open) return null;
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-      onClick={onClose} // click fuera cierra
-    >
-      <div
-        className="w-full max-w-[480px] bg-white rounded-xl shadow-xl"
-        onClick={(e) => e.stopPropagation()} // evita cerrar si clic dentro
-      >
-        {/* HEADER */}
-        <div className="flex items-center justify-between border-b px-8 py-6">
-          <h2 className="text-xl font-bold">MiFichaMed</h2>
-
-          <button
-            onClick={onClose}
-            className="h-10 w-10 flex items-center justify-center rounded-lg bg-slate-100"
-          >
-            ✕
-          </button>
-        </div>
-
-        {/* BODY */}
-        <div className="px-8 pt-8 pb-10">
-          <h1 className="text-3xl font-bold mb-4">Crea tu cuenta</h1>
-
-          <form className="space-y-5">
-            <input
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="Correo"
-              type="email"
-            />
-
-            <input
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="Contraseña"
-              type="password"
-            />
-
-            <input
-              className="w-full border rounded-lg px-4 py-3"
-              placeholder="Confirmar contraseña"
-              type="password"
-            />
-
-            <button className="w-full bg-teal-600 text-white py-4 rounded-lg font-bold">
-              Registrarse
-            </button>
-          </form>
-        </div>
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="components/ui/DashboardCard.tsx">
-import { Plus } from "lucide-react";
-
-export default function DashboardCard({ title, icon: Icon, iconColor, children, footerAction }: any) {
-  return (
-    <div className="rounded-2xl border border-teal-100 bg-white p-6 shadow-sm">
-      <div className="mb-6 flex items-center justify-between border-b border-teal-50 pb-4">
-        <h3 className="font-bold text-lg text-slate-900 flex items-center gap-2">
-          <Icon className={`w-5 h-5 ${iconColor}`} />
-          {title}
-        </h3>
-        <button className="flex items-center gap-1 rounded-lg bg-teal-500/10 px-2 py-1 text-xs font-bold text-teal-700 hover:bg-teal-500/20 transition-colors">
-          <Plus className="w-3 h-3" /> Añadir
-        </button>
-      </div>
-      <div className="space-y-4">{children}</div>
-      {footerAction && (
-        <button className="w-full text-center text-sm font-bold text-teal-600 hover:text-teal-700 py-2 mt-2">
-          {footerAction}
-        </button>
-      )}
-    </div>
-  );
-}
-</file>
-
-<file path="components/ui/MetricCard.tsx">
-export default function MetricCard({ label, value, unit, status }: any) {
-  return (
-    <div className="rounded-2xl border border-teal-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-bold uppercase tracking-wider text-teal-600 mb-1">{label}</p>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-black text-slate-800">{value}</span>
-        <span className="text-sm font-medium text-slate-500">{unit}</span>
-        {status && (
-          <span className="ml-1 text-sm font-medium text-teal-500 bg-teal-50 px-1.5 rounded">
-            {status}
-          </span>
-        )}
-      </div>
-    </div>
-  );
-}
-</file>
-
-<file path="eslint.config.mjs">
-import { defineConfig, globalIgnores } from "eslint/config";
-import nextVitals from "eslint-config-next/core-web-vitals";
-import nextTs from "eslint-config-next/typescript";
-
-const eslintConfig = defineConfig([
-  ...nextVitals,
-  ...nextTs,
-  // Override default ignores of eslint-config-next.
-  globalIgnores([
-    // Default ignores of eslint-config-next:
-    ".next/**",
-    "out/**",
-    "build/**",
-    "next-env.d.ts",
-  ]),
-]);
-
-export default eslintConfig;
-</file>
-
-<file path="next.config.ts">
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
-  /* config options here */
-};
-
-export default nextConfig;
-</file>
-
-<file path="postcss.config.mjs">
-const config = {
-  plugins: {
-    "@tailwindcss/postcss": {},
-  },
-};
-
-export default config;
-</file>
-
-<file path="public/file.svg">
-<svg fill="none" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 13.5V5.41a1 1 0 0 0-.3-.7L9.8.29A1 1 0 0 0 9.08 0H1.5v13.5A2.5 2.5 0 0 0 4 16h8a2.5 2.5 0 0 0 2.5-2.5m-1.5 0v-7H8v-5H3v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1M9.5 5V2.12L12.38 5zM5.13 5h-.62v1.25h2.12V5zm-.62 3h7.12v1.25H4.5zm.62 3h-.62v1.25h7.12V11z" clip-rule="evenodd" fill="#666" fill-rule="evenodd"/></svg>
-</file>
-
-<file path="public/globe.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><g clip-path="url(#a)"><path fill-rule="evenodd" clip-rule="evenodd" d="M10.27 14.1a6.5 6.5 0 0 0 3.67-3.45q-1.24.21-2.7.34-.31 1.83-.97 3.1M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16m.48-1.52a7 7 0 0 1-.96 0H7.5a4 4 0 0 1-.84-1.32q-.38-.89-.63-2.08a40 40 0 0 0 3.92 0q-.25 1.2-.63 2.08a4 4 0 0 1-.84 1.31zm2.94-4.76q1.66-.15 2.95-.43a7 7 0 0 0 0-2.58q-1.3-.27-2.95-.43a18 18 0 0 1 0 3.44m-1.27-3.54a17 17 0 0 1 0 3.64 39 39 0 0 1-4.3 0 17 17 0 0 1 0-3.64 39 39 0 0 1 4.3 0m1.1-1.17q1.45.13 2.69.34a6.5 6.5 0 0 0-3.67-3.44q.65 1.26.98 3.1M8.48 1.5l.01.02q.41.37.84 1.31.38.89.63 2.08a40 40 0 0 0-3.92 0q.25-1.2.63-2.08a4 4 0 0 1 .85-1.32 7 7 0 0 1 .96 0m-2.75.4a6.5 6.5 0 0 0-3.67 3.44 29 29 0 0 1 2.7-.34q.31-1.83.97-3.1M4.58 6.28q-1.66.16-2.95.43a7 7 0 0 0 0 2.58q1.3.27 2.95.43a18 18 0 0 1 0-3.44m.17 4.71q-1.45-.12-2.69-.34a6.5 6.5 0 0 0 3.67 3.44q-.65-1.27-.98-3.1" fill="#666"/></g><defs><clipPath id="a"><path fill="#fff" d="M0 0h16v16H0z"/></clipPath></defs></svg>
-</file>
-
-<file path="public/next.svg">
-<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 394 80"><path fill="#000" d="M262 0h68.5v12.7h-27.2v66.6h-13.6V12.7H262V0ZM149 0v12.7H94v20.4h44.3v12.6H94v21h55v12.6H80.5V0h68.7zm34.3 0h-17.8l63.8 79.4h17.9l-32-39.7 32-39.6h-17.9l-23 28.6-23-28.6zm18.3 56.7-9-11-27.1 33.7h17.8l18.3-22.7z"/><path fill="#000" d="M81 79.3 17 0H0v79.3h13.6V17l50.2 62.3H81Zm252.6-.4c-1 0-1.8-.4-2.5-1s-1.1-1.6-1.1-2.6.3-1.8 1-2.5 1.6-1 2.6-1 1.8.3 2.5 1a3.4 3.4 0 0 1 .6 4.3 3.7 3.7 0 0 1-3 1.8zm23.2-33.5h6v23.3c0 2.1-.4 4-1.3 5.5a9.1 9.1 0 0 1-3.8 3.5c-1.6.8-3.5 1.3-5.7 1.3-2 0-3.7-.4-5.3-1s-2.8-1.8-3.7-3.2c-.9-1.3-1.4-3-1.4-5h6c.1.8.3 1.6.7 2.2s1 1.2 1.6 1.5c.7.4 1.5.5 2.4.5 1 0 1.8-.2 2.4-.6a4 4 0 0 0 1.6-1.8c.3-.8.5-1.8.5-3V45.5zm30.9 9.1a4.4 4.4 0 0 0-2-3.3 7.5 7.5 0 0 0-4.3-1.1c-1.3 0-2.4.2-3.3.5-.9.4-1.6 1-2 1.6a3.5 3.5 0 0 0-.3 4c.3.5.7.9 1.3 1.2l1.8 1 2 .5 3.2.8c1.3.3 2.5.7 3.7 1.2a13 13 0 0 1 3.2 1.8 8.1 8.1 0 0 1 3 6.5c0 2-.5 3.7-1.5 5.1a10 10 0 0 1-4.4 3.5c-1.8.8-4.1 1.2-6.8 1.2-2.6 0-4.9-.4-6.8-1.2-2-.8-3.4-2-4.5-3.5a10 10 0 0 1-1.7-5.6h6a5 5 0 0 0 3.5 4.6c1 .4 2.2.6 3.4.6 1.3 0 2.5-.2 3.5-.6 1-.4 1.8-1 2.4-1.7a4 4 0 0 0 .8-2.4c0-.9-.2-1.6-.7-2.2a11 11 0 0 0-2.1-1.4l-3.2-1-3.8-1c-2.8-.7-5-1.7-6.6-3.2a7.2 7.2 0 0 1-2.4-5.7 8 8 0 0 1 1.7-5 10 10 0 0 1 4.3-3.5c2-.8 4-1.2 6.4-1.2 2.3 0 4.4.4 6.2 1.2 1.8.8 3.2 2 4.3 3.4 1 1.4 1.5 3 1.5 5h-5.8z"/></svg>
-</file>
-
-<file path="public/vercel.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1155 1000"><path d="m577.3 0 577.4 1000H0z" fill="#fff"/></svg>
-</file>
-
-<file path="public/window.svg">
-<svg fill="none" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill-rule="evenodd" clip-rule="evenodd" d="M1.5 2.5h13v10a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1zM0 1h16v11.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 0 12.5zm3.75 4.5a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5M7 4.75a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0m1.75.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5" fill="#666"/></svg>
-</file>
-
-<file path="README.md">
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-</file>
-
-<file path="tsconfig.json">
-{
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "paths": {
-      "@/*": ["./*"]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
-  ],
-  "exclude": ["node_modules"]
-}
-</file>
-
-<file path=".gitignore">
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
-
-# testing
-/coverage
-
-# next.js
-/.next/
-/out/
-
-# production
-/build
-
-# misc
-.DS_Store
-*.pem
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-repomix-output.xml
-</file>
-
-<file path="app/dashboard/page.tsx">
+<file path="features/conditions/components/ConditionDetail.tsx">
 "use client"
 
-import { useState, useEffect } from "react"
-import { motion } from "motion/react"
-import { Activity, Stethoscope, Pill, ShieldAlert } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { useState } from "react"
+import ConditionModal from "@/features/conditions/components/ConditionModal"
+import { getCategoryIcon } from "@/lib/categoryIcons"
 
-import { getDashboard } from "@/lib/dashboard"
-import { DashboardData } from "@/features/dashboard/types"
+export default function ConditionDetail({ condition, refresh, onDelete }: any) {
+  const [isEditOpen, setIsEditOpen] = useState(false)
 
-import MetricCard from "@/components/ui/MetricCard"
-import DashboardCard from "@/components/ui/DashboardCard"
-
-export default function DashboardPage() {
-
-  /* ---------------- STATE ---------------- */
-
-  const [data, setData] = useState<DashboardData | null>(null)
-
-  /* ---------------- DATA FETCH ---------------- */
-
-const router = useRouter()
-
-useEffect(() => {
-  async function loadDashboard() {
-    const dashboard = await getDashboard()
-
-    // 🚨 VALIDACIÓN DE CUENTA SIN DATOS DE SALUD
-    if (!dashboard.profile || !dashboard.profile.weight || !dashboard.profile.height) {
-      router.push("/onboarding/profile")
-      return
-    }
-
-    setData(dashboard)
+  if (!condition) {
+    return (
+      <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 text-slate-400">
+        Selecciona una condición para ver el detalle
+      </div>
+    )
   }
 
-  loadDashboard()
-}, [])
-
-  /* ---------------- LOADING ---------------- */
-
-  if (!data) {
-    return <p className="p-6">Cargando dashboard...</p>
+  const statusLabel: any = {
+    active: "Activa",
+    chronic: "Crónica",
+    resolved: "Resuelta",
+    remission: "En Remisión",
   }
 
-  /* ---------------- DESTRUCTURING ---------------- */
-
-  const {
-    profile,
-    active_conditions,
-    active_symptoms,
-    active_allergies
-  } = data
-
-  /* Calculo de BMI y su estado */
-  let bmi: number | string = "N/A"
-  let bmi_status = "Datos insuficientes"
-
-  if (profile?.weight != null && profile?.height != null) {
-    const heightInMeters = profile.height / 100
-
-    bmi = profile.weight / (heightInMeters * heightInMeters)
-    bmi = Number(bmi.toFixed(1))
-
-    bmi_status =
-      bmi < 18.5 ? "Bajo peso" :
-      bmi < 25 ? "Normal" :
-      bmi < 30 ? "Sobrepeso" : "Obesidad"
-  }
-
-  /* tratamientos vienen dentro de condiciones */
-  const treatments = active_conditions.flatMap((c) => c.treatments)
-
-  /* ---------------- UI ---------------- */
+  const Icon = getCategoryIcon(condition.condition?.category)
 
   return (
-    <div className="container mx-auto max-w-7xl p-6 md:p-10">
+    <>
+      <ConditionModal
+        isOpen={isEditOpen}
+        onClose={() => setIsEditOpen(false)}
+        onSuccess={refresh}
+        mode="edit"
+        condition={condition}
+      />
 
-      {/* HEADER */}
+      <div className="space-y-4">
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mb-10"
-      >
-        <p className="font-bold text-teal-600 mb-1">
-          ¡Hola {profile?.full_name}!
-        </p>
+        {/* HEADER CARD */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
+          <h2 className="text-lg font-bold text-slate-800">Detalle</h2>
 
-        <h2 className="text-4xl font-black text-teal-950">
-          Resumen de Salud
-        </h2>
-      </motion.div>
+          {/* TOP */}
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+                <Icon className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-slate-800">
+                  {condition.condition?.name}
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {condition.condition?.category}
+                </p>
+              </div>
+            </div>
 
+            <button
+              onClick={() => setIsEditOpen(true)}
+              className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition"
+            >
+              Editar
+            </button>
 
-      {/* METRICS */}
+            <button
+              onClick={() => {
+                const ok = confirm("¿Eliminar esta enfermedad?");
+                if (!ok) return;
 
-      <section className="mb-10">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                onDelete?.(condition.id);
+              }}
+              className="px-4 py-2 border border-red-200 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-50 transition"
+            >
+              Eliminar
+            </button>
+          </div>
 
-          <MetricCard label="Peso" value={profile?.weight ?? "N/A"} unit="kg" />
-          <MetricCard label="Altura" value={profile?.height ?? "N/A"} unit="cms." />
-          <MetricCard label="IMC" value={bmi} status={bmi_status} />
-
+          {/* INFO GRID */}
+          <div className="grid grid-cols-3 gap-4 bg-slate-50 p-4 rounded-xl text-center">
+            <div className="border-r border-slate-200 last:border-0">
+              <p className="text-[10px] uppercase font-bold text-slate-400">Fecha inicio</p>
+              <p className="text-sm font-bold mt-1">{condition.start_date || "--"}</p>
+            </div>
+            <div className="border-r border-slate-200 last:border-0">
+              <p className="text-[10px] uppercase font-bold text-slate-400">Fecha fin</p>
+              <p className="text-sm font-bold mt-1 text-slate-400">{condition.end_date || "--"}</p>
+            </div>
+            <div>
+              <p className="text-[10px] uppercase font-bold text-slate-400">Estado</p>
+              <p className="text-sm font-bold mt-1 text-emerald-600">
+                {statusLabel[condition.status]}
+              </p>
+            </div>
+          </div>
         </div>
-      </section>
 
-
-      {/* DASHBOARD CARDS */}
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-
-        {/* CONDITIONS */}
-
-        <DashboardCard
-          title="Enfermedades"
-          icon={Activity}
-          iconColor="text-red-400"
-        >
-
-          {active_conditions.length === 0 ? (
-
-            <p className="text-gray-500">
-              No hay condiciones activas
+        {/* NOTAS: Segundo hijo, aquí sí aplica el gap de space-y-4 */}
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200">
+          <h3 className="font-bold text-slate-800 mb-4">Notas</h3>
+          <div className="bg-emerald-50 border-l-4 border-emerald-400 p-4 rounded-r-lg">
+            <p className="text-sm text-slate-700 italic">
+              {condition.notes || "Sin notas"}
             </p>
-
-          ) : (
-
-            <ul className="space-y-2">
-
-              {active_conditions.map((c) => (
-
-                <li key={c.id} className="text-sm">
-                  {c.condition.name}
-                </li>
-
-              ))}
-
-            </ul>
-
-          )}
-
-        </DashboardCard>
-
-
-        {/* SYMPTOMS */}
-
-        <DashboardCard
-          title="Síntomas"
-          icon={Stethoscope}
-          iconColor="text-blue-400"
-        >
-
-          {active_symptoms.length === 0 ? (
-
-            <p className="text-gray-500">
-              No hay síntomas activos
-            </p>
-
-          ) : (
-
-            <ul className="space-y-2">
-
-              {active_symptoms.map((s) => (
-
-                <li key={s.id}>
-                  {s.symptom.name}
-                </li>
-
-              ))}
-
-            </ul>
-
-          )}
-
-        </DashboardCard>
-
-
-        {/* TREATMENTS */}
-
-        <DashboardCard
-          title="Tratamientos"
-          icon={Pill}
-          iconColor="text-green-400"
-        >
-
-          {treatments.length === 0 ? (
-
-            <p className="text-gray-500">
-              No hay tratamientos activos
-            </p>
-
-          ) : (
-
-            <ul className="space-y-2">
-
-              {treatments.map((t) => (
-
-                <li key={t.id} className="text-sm">
-                  {t.medication.name}
-                </li>
-
-              ))}
-
-            </ul>
-
-          )}
-
-        </DashboardCard>
-
-
-        {/* ALLERGIES */}
-
-        <DashboardCard
-          title="Alergias"
-          icon={ShieldAlert}
-          iconColor="text-yellow-400"
-        >
-
-          {active_allergies.length === 0 ? (
-
-            <p className="text-gray-500">
-              No hay alergias registradas
-            </p>
-
-          ) : (
-
-            <ul className="space-y-2">
-
-              {active_allergies.map((a) => (
-
-                <li key={a.id}>
-                  {a.allergy.name}
-                </li>
-
-              ))}
-
-            </ul>
-
-          )}
-
-        </DashboardCard>
-
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 </file>
 
+<file path="features/conditions/hooks/useUserConditions.tsx">
+"use client"
+
+import { useEffect, useState, useCallback, useMemo } from "react"
+import { apiFetch } from "@/lib/api"
+import { deleteUserCondition } from "../services/conditionServices"
+
+export function useUserConditions(initialSelectedId?: number | null) {
+  const [conditions, setConditions] = useState<any[]>([])
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId ?? null)
+  const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
+
+  const selected = useMemo(() => {
+    return conditions.find((c) => c.id === selectedId) || null
+  }, [conditions, selectedId])
+
+  // -----------------------------
+  // FETCH
+  // -----------------------------
+  const fetchConditions = async () => {
+    try {
+      setLoading(true)
+
+      const data = await apiFetch("/user-conditions/")
+      setConditions(data)
+      setFiltered(data)
+
+      // 🎯 lógica correcta con IDs
+      if (!data || data.length === 0) {
+        setSelectedId(null)
+        return
+      }
+
+      // prioridad: URL
+      if (initialSelectedId) {
+        const exists = data.some((c: any) => c.id === initialSelectedId)
+        if (exists) {
+          setSelectedId(initialSelectedId)
+          return
+        }
+      }
+
+      // fallback: primer elemento
+      setSelectedId((prev) => {
+        if (!prev) return data[0].id
+
+        const exists = data.some((c: any) => c.id === prev)
+        return exists ? prev : data[0].id
+      })
+
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchConditions()
+  }, [])
+
+  // -----------------------------
+  // FILTER
+  // -----------------------------
+  const searchConditions = useCallback((query: string) => {
+    if (!query) {
+      setFiltered(conditions)
+      return
+    }
+
+    const lower = query.toLowerCase()
+
+    const filteredData = conditions.filter((c: any) =>
+      c.condition?.name?.toLowerCase().includes(lower)
+    )
+
+    setFiltered(filteredData)
+  }, [conditions])
+
+  // -----------------------------
+  // REMOVE
+  // -----------------------------
+  const remove = useCallback(async (id: number) => {
+    try {
+      await deleteUserCondition(id)
+
+      setConditions((prev) => prev.filter((c) => c.id !== id))
+      setFiltered((prev) => prev.filter((c) => c.id !== id))
+
+      // si borras el seleccionado → limpiar
+      if (selectedId === id) {
+        setSelectedId(null)
+      }
+
+    } catch (err) {
+      console.error(err)
+    }
+  }, [selectedId])
+
+  return {
+    conditions,
+    filtered,
+    selected,
+    selectedId,        // 👈 útil para debug/UI
+    setSelected: setSelectedId,
+    fetchConditions,
+    search: searchConditions,
+    setSearch,
+    remove,
+    loading,
+  }
+}
+</file>
+
+<file path="features/dashboard/types.ts">
+export type UserCondition = {
+  id: number
+  status: string
+  condition: {
+    name: string
+  }
+  treatments: Treatment[]
+}
+
+export type Treatment = {
+  id: number
+  medication: {
+    name: string
+  }
+}
+
+export type Symptom = {
+  id: number
+  symptom: {
+    name: string
+  }
+}
+
+export type Allergy = {
+  id: number
+  allergy: {
+    name: string
+  }
+}
+
+export type DashboardData = {
+  profile: {
+    full_name: string
+    weight: number | null
+    height: number | null
+  }
+  active_conditions: UserCondition[]
+  active_symptoms: Symptom[]
+  active_allergies: Allergy[]
+}
+</file>
+
+<file path="package.json">
+{
+  "name": "mifichamed-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.577.0",
+    "motion": "^12.35.0",
+    "next": "^16.2.2",
+    "react": "19.2.3",
+    "react-dom": "19.2.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+</file>
+
 <file path="app/globals.css">
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-}
 
-:root {
-  --primary-mint: #e6f7f2;
-  --accent-mint: #4ade80;
-  --dark-mint: #0f766e;
-  --text-main: #1f2937;
-}
+  /* 🎨 Colores semánticos */
+  --color-background: #ffffff;
+  --color-foreground: #1f2937;
 
-body {
-  font-family: 'Inter', sans-serif;
-  color: var(--text-main);
-}
+  --color-primary: #0f766e;
+  --color-primary-foreground: #ffffff;
 
-.hero-gradient {
-  background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+  --color-secondary: #4ade80;
+  --color-secondary-foreground: #052e2b;
+
+  --color-muted: #e6f7f2;
+  --color-muted-foreground: #6b7280;
+
+  --color-border: #d1d5db;
 }
 </file>
 
@@ -2695,36 +3897,42 @@ export async function apiFetch(
 ) {
 
   const token = localStorage.getItem("token")
+  const method = options.method || 'GET'
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-      ...options.headers
-    }
-  })
-
-  if (res.status === 401) {
-    localStorage.removeItem("token")
-    window.location.href = "/"
-    throw new Error("Unauthorized")
-  }
-
-  let data = null
 
   try {
-    data = await res.json()
-  } catch {
-    // respuesta vacía
+    const res = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+        ...options.headers
+      }
+    })
+
+
+    if (res.status === 401) {
+      console.error('❌ 401 Unauthorized - Token inválido')
+      localStorage.removeItem("token")
+      window.location.href = "/"
+      throw new Error("Unauthorized")
+    }
+
+    let data = null
+    try {
+      const text = await res.text()
+      if (text) data = JSON.parse(text)
+    } catch {}
+
+    if (!res.ok) {
+      console.error(`❌ Error:`, { status: res.status, data })
+      throw new Error(`HTTP ${res.status}: ${res.statusText}`)
+    }
+    return data
+  } catch (error) {
+    console.error(`💥 Network Error:`, error)
+    throw error
   }
-
-  if (!res.ok) {
-  
-  throw new Error(JSON.stringify(data))
-}
-
-  return data
 }
 </file>
 
@@ -2758,34 +3966,262 @@ export async function validateToken() {
 }
 </file>
 
-<file path="package.json">
-{
-  "name": "mifichamed-frontend",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "lucide-react": "^0.577.0",
-    "motion": "^12.35.0",
-    "next": "16.1.6",
-    "react": "19.2.3",
-    "react-dom": "19.2.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+<file path="app/dashboard/page.tsx">
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion } from "motion/react"
+import { Activity, Stethoscope, Pill, ShieldAlert } from "lucide-react"
+import { useRouter } from "next/navigation"
+
+import { getDashboard } from "@/lib/dashboard"
+import { DashboardData } from "@/features/dashboard/types"
+
+import MetricCard from "@/components/ui/MetricCard"
+import DashboardCard from "@/components/ui/DashboardCard"
+
+export default function DashboardPage() {
+
+  /* ---------------- STATE ---------------- */
+
+  const [data, setData] = useState<DashboardData | null>(null)
+
+  /* ---------------- DATA FETCH ---------------- */
+
+const router = useRouter()
+
+useEffect(() => {
+  async function loadDashboard() {
+    const dashboard = await getDashboard()
+
+    // 🚨 VALIDACIÓN DE CUENTA SIN DATOS DE SALUD
+    if (!dashboard.profile || !dashboard.profile.weight || !dashboard.profile.height) {
+      router.push("/onboarding/profile")
+      return
+    }
+
+    setData(dashboard)
   }
+
+  loadDashboard()
+}, [])
+
+  /* ---------------- LOADING ---------------- */
+
+  if (!data) {
+    return <p className="p-6">Cargando dashboard...</p>
+  }
+
+  /* ---------------- DESTRUCTURING ---------------- */
+
+  const {
+    profile,
+    active_conditions,
+    active_symptoms,
+    active_allergies
+  } = data
+
+  /* Calculo de BMI y su estado */
+  let bmi: number | string = "N/A"
+  let bmi_status = "Datos insuficientes"
+
+  if (profile?.weight != null && profile?.height != null) {
+    const heightInMeters = profile.height / 100
+
+    bmi = profile.weight / (heightInMeters * heightInMeters)
+    bmi = Number(bmi.toFixed(1))
+
+    bmi_status =
+      bmi < 18.5 ? "Bajo peso" :
+      bmi < 25 ? "Normal" :
+      bmi < 30 ? "Sobrepeso" : "Obesidad"
+  }
+
+  /* tratamientos vienen dentro de condiciones */
+  const treatments = active_conditions.flatMap((c) => c.treatments)
+
+  /* ---------------- UI ---------------- */
+
+  return (
+    <div className="container mx-auto max-w-7xl p-6 md:p-10">
+
+      {/* HEADER */}
+
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-10"
+      >
+        <p className="font-bold text-teal-600 mb-1">
+          ¡Hola {profile?.full_name}!
+        </p>
+
+        <h2 className="text-4xl font-black text-teal-950">
+          Resumen de Salud
+        </h2>
+      </motion.div>
+
+
+      {/* METRICS */}
+
+      <section className="mb-10">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+
+          <MetricCard label="Peso" value={profile?.weight ?? "N/A"} unit="kg" />
+          <MetricCard label="Altura" value={profile?.height ?? "N/A"} unit="cms." />
+          <MetricCard label="IMC" value={bmi} status={bmi_status} />
+
+        </div>
+      </section>
+
+
+      {/* DASHBOARD CARDS */}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+        {/* CONDITIONS */}
+
+        <DashboardCard
+          title="Enfermedades"
+          icon={Activity}
+          iconColor="text-red-400"
+        >
+
+          {active_conditions.length === 0 ? (
+
+            <p className="text-gray-500">
+              No hay condiciones activas
+            </p>
+
+          ) : (
+
+            <div className="flex flex-wrap gap-2">
+              {active_conditions.map((c) => {
+                const isChronic = c.status === "chronic"
+
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => router.push(`/dashboard/conditions?selected=${c.id}`)}
+                    className={`
+                      cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium border transition-all
+                      ${isChronic 
+                        ? "bg-orange-50 text-orange-700 border-orange-100 hover:bg-orange-100" 
+                        : "bg-red-50 text-red-700 border-red-100 hover:bg-red-100"}
+                    `}
+                  >
+                    {c.condition?.name}
+                  </div>
+                )
+              })}
+            </div>
+
+          )}
+
+        </DashboardCard>
+
+
+        {/* SYMPTOMS */}
+
+        <DashboardCard
+          title="Síntomas"
+          icon={Stethoscope}
+          iconColor="text-blue-400"
+        >
+
+          {active_symptoms.length === 0 ? (
+
+            <p className="text-gray-500">
+              No hay síntomas activos
+            </p>
+
+          ) : (
+
+            <ul className="space-y-2">
+
+              {active_symptoms.map((s) => (
+
+                <li key={s.id}>
+                  {s.symptom.name}
+                </li>
+
+              ))}
+
+            </ul>
+
+          )}
+
+        </DashboardCard>
+
+
+        {/* TREATMENTS */}
+
+        <DashboardCard
+          title="Tratamientos"
+          icon={Pill}
+          iconColor="text-green-400"
+        >
+
+          {treatments.length === 0 ? (
+
+            <p className="text-gray-500">
+              No hay tratamientos activos
+            </p>
+
+          ) : (
+
+            <ul className="space-y-2">
+
+              {treatments.map((t) => (
+
+                <li key={t.id} className="text-sm">
+                  {t.medication.name}
+                </li>
+
+              ))}
+
+            </ul>
+
+          )}
+
+        </DashboardCard>
+
+
+        {/* ALLERGIES */}
+
+        <DashboardCard
+          title="Alergias"
+          icon={ShieldAlert}
+          iconColor="text-yellow-400"
+        >
+
+          {active_allergies.length === 0 ? (
+
+            <p className="text-gray-500">
+              No hay alergias registradas
+            </p>
+
+          ) : (
+
+            <ul className="space-y-2">
+
+              {active_allergies.map((a) => (
+
+                <li key={a.id}>
+                  {a.allergy.name}
+                </li>
+
+              ))}
+
+            </ul>
+
+          )}
+
+        </DashboardCard>
+
+      </div>
+    </div>
+  )
 }
 </file>
 

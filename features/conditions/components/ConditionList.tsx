@@ -1,5 +1,4 @@
 import ConditionCard from "./ConditionCard"
-import { getCategoryIcon } from "@/lib/categoryIcons"
 
 export default function ConditionList({ conditions, selected, onSelect }: any) {
 
@@ -12,7 +11,7 @@ export default function ConditionList({ conditions, selected, onSelect }: any) {
           key={c.id}
           condition={c}
           isSelected={selected?.id === c.id}
-          onClick={() => onSelect(c)}
+          onClick={() => onSelect(c.id)}
         />
       ))}
     </div>

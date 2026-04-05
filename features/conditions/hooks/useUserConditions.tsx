@@ -1,44 +1,52 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo } from "react"
 import { apiFetch } from "@/lib/api"
+import { deleteUserCondition } from "../services/conditionServices"
 
 export function useUserConditions(initialSelectedId?: number | null) {
-  // 🔹 Lista completa desde backend
   const [conditions, setConditions] = useState<any[]>([])
-
-  // 🔹 Condición actualmente seleccionada
-  const [selected, setSelected] = useState<any | null>(null)
-
-  // 🔹 Estado de carga
+  const [filtered, setFiltered] = useState<any[]>([])
+  const [selectedId, setSelectedId] = useState<number | null>(initialSelectedId ?? null)
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState("")
 
-  // 🔹 Texto de búsqueda
-  const [query, setQuery] = useState("")
+  const selected = useMemo(() => {
+    return conditions.find((c) => c.id === selectedId) || null
+  }, [conditions, selectedId])
 
-  // 🔸 Fetch principal de condiciones
+  // -----------------------------
+  // FETCH
+  // -----------------------------
   const fetchConditions = async () => {
     try {
       setLoading(true)
 
       const data = await apiFetch("/user-conditions/")
-
       setConditions(data)
+      setFiltered(data)
 
-      
-      setSelected((prev: any) => {
-        if (!data || data.length === 0) return null
+      // 🎯 lógica correcta con IDs
+      if (!data || data.length === 0) {
+        setSelectedId(null)
+        return
+      }
 
-        // 🔥 PRIORIDAD: selección desde URL
-        if (initialSelectedId) {
-          const fromUrl = data.find((c: any) => c.id === initialSelectedId)
-          if (fromUrl) return fromUrl
+      // prioridad: URL
+      if (initialSelectedId) {
+        const exists = data.some((c: any) => c.id === initialSelectedId)
+        if (exists) {
+          setSelectedId(initialSelectedId)
+          return
         }
+      }
 
-        if (!prev) return data[0]
+      // fallback: primer elemento
+      setSelectedId((prev) => {
+        if (!prev) return data[0].id
 
-        const found = data.find((c: any) => c.id === prev.id)
-        return found ? found : data[0]
+        const exists = data.some((c: any) => c.id === prev)
+        return exists ? prev : data[0].id
       })
 
     } catch (err) {
@@ -48,50 +56,58 @@ export function useUserConditions(initialSelectedId?: number | null) {
     }
   }
 
-  // 🔸 Cargar datos al montar
   useEffect(() => {
     fetchConditions()
   }, [])
 
-  // 🔸 Lista filtrada (DERIVADA, no estado)
-  const filtered = useMemo(() => {
-    if (!query) return conditions
-
-    return conditions.filter((c) =>
-      c.condition?.name?.toLowerCase().includes(query.toLowerCase())
-    )
-  }, [conditions, query])
-
-  // 🔸 🔥 CLAVE: mantener selected sincronizado con filtered
-  useEffect(() => {
-    // Si no hay elementos → nada seleccionado
-    if (!filtered.length) {
-      setSelected(null)
+  // -----------------------------
+  // FILTER
+  // -----------------------------
+  const searchConditions = useCallback((query: string) => {
+    if (!query) {
+      setFiltered(conditions)
       return
     }
 
-    // Verifica si el seleccionado actual sigue existiendo en el filtro
-    const exists = filtered.find((c) => c.id === selected?.id)
+    const lower = query.toLowerCase()
 
-    // Si no existe → selecciona el primero automáticamente
-    if (!exists) {
-      setSelected(filtered[0])
+    const filteredData = conditions.filter((c: any) =>
+      c.condition?.name?.toLowerCase().includes(lower)
+    )
+
+    setFiltered(filteredData)
+  }, [conditions])
+
+  // -----------------------------
+  // REMOVE
+  // -----------------------------
+  const remove = useCallback(async (id: number) => {
+    try {
+      await deleteUserCondition(id)
+
+      setConditions((prev) => prev.filter((c) => c.id !== id))
+      setFiltered((prev) => prev.filter((c) => c.id !== id))
+
+      // si borras el seleccionado → limpiar
+      if (selectedId === id) {
+        setSelectedId(null)
+      }
+
+    } catch (err) {
+      console.error(err)
     }
-
-  }, [filtered])
-
-  // 🔸 Búsqueda (solo actualiza query, el effect hace el resto)
-  const search = (value: string) => {
-    setQuery(value)
-  }
+  }, [selectedId])
 
   return {
-    conditions,   // lista completa
-    filtered,     // lista filtrada
-    selected,     // seleccionado actual
-    setSelected,  // selección manual (click en lista)
+    conditions,
+    filtered,
+    selected,
+    selectedId,        // 👈 útil para debug/UI
+    setSelected: setSelectedId,
     fetchConditions,
-    search,
+    search: searchConditions,
+    setSearch,
+    remove,
     loading,
   }
 }

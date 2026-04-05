@@ -3,8 +3,9 @@
 import { useState } from "react"
 import ConditionModal from "@/features/conditions/components/ConditionModal"
 import { getCategoryIcon } from "@/lib/categoryIcons"
+import { Pencil, Trash2 } from "lucide-react"
 
-export default function ConditionDetail({ condition, refresh }: any) {
+export default function ConditionDetail({ condition, refresh, onDelete }: any) {
   const [isEditOpen, setIsEditOpen] = useState(false)
 
   if (!condition) {
@@ -35,13 +36,14 @@ export default function ConditionDetail({ condition, refresh }: any) {
       />
 
       <div className="space-y-4">
-        
+
         {/* HEADER CARD */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-slate-200 space-y-4">
           <h2 className="text-lg font-bold text-slate-800">Detalle</h2>
 
           {/* TOP */}
           <div className="flex justify-between items-start">
+            {/* IZQUIERDA */}
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
                 <Icon className="w-6 h-6 text-emerald-600" />
@@ -56,12 +58,28 @@ export default function ConditionDetail({ condition, refresh }: any) {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsEditOpen(true)}
-              className="px-4 py-2 border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition"
-            >
-              Editar
-            </button>
+            {/* DERECHA (BOTONES) */}
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => setIsEditOpen(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition shadow-sm"
+              >
+                <Pencil className="w-4 h-4" />
+                Editar
+              </button>
+
+              <button
+                onClick={() => {
+                  const ok = confirm("¿Eliminar esta enfermedad?");
+                  if (!ok) return;
+                  onDelete?.(condition.id);
+                }}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 border border-red-200 rounded-lg text-sm font-semibold text-red-600 hover:bg-red-100 transition shadow-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Eliminar
+              </button>
+            </div>
           </div>
 
           {/* INFO GRID */}

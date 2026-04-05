@@ -55,7 +55,7 @@ export default function ConditionCard({
 
       <div className="flex items-start gap-3">
 
-        {/* ICONO (corregido) */}
+        {/* ICONO */}
         <div
           className={`
             w-10 h-10 rounded-lg flex items-center justify-center transition

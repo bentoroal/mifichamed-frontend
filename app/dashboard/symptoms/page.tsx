@@ -1,15 +1,14 @@
 "use client"
 
-import { useState } from "react"
-import { useSearchParams } from "next/navigation"
-
-import ConditionList from "@/features/conditions/components/ConditionList"
-import ConditionDetail from "@/features/conditions/components/ConditionDetail"
+import SymptomList from "@/features/symptoms/components/SymptomList"
+import SymptomDetail from "@/features/symptoms/components/SymptomDetail"
 import DashboardHeader from "@/components/ui/DashboardHeader"
-import ConditionModal from "@/features/conditions/components/ConditionModal"
-import { useUserConditions } from "@/features/conditions/hooks/useUserConditions"
+import SymptomModal from "@/features/symptoms/components/SymptomModal"
+import { useUserSymptoms } from "@/features/symptoms/hooks/useUserSymptom"
+import { useSearchParams } from "next/navigation"
+import { useState } from "react"
 
-export default function ConditionsPage() {
+export default function SymptomsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   const searchParams = useSearchParams()
@@ -19,18 +18,16 @@ export default function ConditionsPage() {
     filtered,
     selected,
     setSelected,
-    fetchConditions,
-    setSearch,
+    fetchSymptoms,
+    search,
     remove,
-  } = useUserConditions(
+  } = useUserSymptoms(
     selectedFromUrl ? Number(selectedFromUrl) : null
   )
 
-  // -----------------------------
-  // HANDLERS
-  // -----------------------------
+  // 🔹 conectar header con hook
   const handleSearch = (value: string) => {
-    setSearch(value)
+    search(value)
   }
 
   const handleAdd = () => {
@@ -41,41 +38,40 @@ export default function ConditionsPage() {
     <div className="p-8 bg-slate-50 min-h-screen">
       <div className="max-w-7xl mx-auto space-y-6">
 
-        <ConditionModal
+        <SymptomModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={fetchConditions}
+          onSuccess={fetchSymptoms}
         />
 
         {/* HEADER */}
         <DashboardHeader
-          title="Enfermedades"
-          placeholder="Ej: Diabetes"
+          title="Síntomas"
+          placeholder="Ej: Dolor de cabeza"
           onSearch={handleSearch}
           onAdd={handleAdd}
         />
 
-        {/* CONTENEDOR */}
+        {/* CONTENIDO */}
         <div className="flex gap-6 items-start">
 
-          {/* LIST */}
+          {/* LISTA */}
           <div className="w-2/5">
-            <ConditionList
-              conditions={filtered}
+            <SymptomList
+              symptoms={filtered}
               selected={selected}
               onSelect={setSelected}
             />
           </div>
 
-          {/* DETAIL */}
+          {/* DETALLE */}
           <div className="w-3/5">
-            <ConditionDetail
-              condition={selected}
-              refresh={fetchConditions}
+            <SymptomDetail
+              symptom={selected}
+              refresh={fetchSymptoms}
               onDelete={remove}
             />
           </div>
-          
 
         </div>
       </div>

@@ -20,7 +20,7 @@ export default function StatusSelector({
             className={`h-12 rounded-xl border-2 text-sm transition
               ${
                 selected
-                  ? "border-[var(--dark-mint)] bg-[var(--primary-mint)] text-[var(--dark-mint)]"
+                  ? "border-primary bg-muted text-primary"
                   : "border-slate-200 text-slate-500 hover:border-slate-300"
               }
             `}

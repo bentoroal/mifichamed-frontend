@@ -9,7 +9,7 @@ export default function Input({
     "w-full h-11 px-4 rounded-lg border bg-white outline-none transition"
 
   const normal =
-    "border-slate-200 focus:ring-2 focus:ring-[var(--accent-mint)]"
+    "border-slate-200 focus:ring-2 focus:ring-secondary"
 
   const errorStyle = "border-red-400 focus:ring-2 focus:ring-red-300"
 

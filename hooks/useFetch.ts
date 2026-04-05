@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react"
 
-export function useFetch(fetchFn: () => Promise<any>, enabled = true) {
+export function useFetch(
+  fetchFn: () => Promise<any>,
+  enabled = true,
+  deps: any[] = [] // 🔥 nuevo
+) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<any>(null)
@@ -23,7 +27,7 @@ export function useFetch(fetchFn: () => Promise<any>, enabled = true) {
   useEffect(() => {
     if (!enabled) return
     fetchData()
-  }, [enabled])
+  }, [enabled, ...deps]) // 🔥 CLAVE
 
   return { data, loading, error, refetch: fetchData }
 }

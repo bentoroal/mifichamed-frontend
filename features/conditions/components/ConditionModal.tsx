@@ -43,7 +43,8 @@ export default function ConditionModal({
 
   const { data: conditions } = useFetch(
     () => getConditionsByCategory(form.category),
-    !!form.category
+    !!form.category,
+    [form.category] 
   )
 
   // 🧠 cargar datos edit
@@ -152,7 +153,7 @@ export default function ConditionModal({
             <button onClick={onClose}>Cancelar</button>
             <button
               onClick={handleSubmit}
-              className="px-6 py-2 rounded-lg bg-[var(--dark-mint)] text-white"
+              className="px-6 py-2 rounded-lg bg-primary text-white"
             >
               Guardar
             </button>
@@ -168,6 +169,7 @@ export default function ConditionModal({
             onChange={(e: any) => {
               handleChange("category", e.target.value)
               handleChange("condition_id", null)
+              handleChange("condition_name", "")
 
               setErrors((prev: any) => ({
                 ...prev,
