@@ -70,7 +70,7 @@ export const createCustomSymptom = (name: string) => {
 }
 
 // -----------------------------
-// DAILY RECORDS (CORE)
+// DAILY RECORDS 
 // -----------------------------
 
 // 🔹 obtener registro de un día específico
@@ -104,7 +104,7 @@ export const getDailyRecords = (symptomId: number) => {
   return apiFetch(`/user-symptoms/${symptomId}/daily`)
 }
 
-// 🔹 crear manual (poco usado si tienes upsert)
+// 🔹 crear manual 
 export const createDailyRecord = (
   symptomId: number,
   data: DailyPayload

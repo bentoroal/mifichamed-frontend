@@ -9,7 +9,7 @@ export function useSymptomDetail(symptom: any) {
 
   const debouncedNotes = useDebounce(notes, 800)
 
-  // 🔥 para evitar autosave en mount
+  // evitar autosave en mount
   const isFirstRender = useRef(true)
 
   // -----------------------------

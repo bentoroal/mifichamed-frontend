@@ -14,11 +14,23 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
 
   const { notes, setNotes } = useSymptomDetail(symptom)
 
-  const { severity, setSeverity } = useSymptomDaily(
+  const { severity, setSeverity, status } = useSymptomDaily(
     symptom?.id,
     selectedDate
   )
   const Icon = getSymptomIcon(symptom?.symptom?.name)
+
+  function getSeverityColor(value: number) {
+    const ratio = (value - 1) / 9 // 0 a 1
+
+    const r = Math.round(34 + (239 - 34) * ratio)   // verde → rojo
+    const g = Math.round(197 - (197 - 68) * ratio)
+    const b = Math.round(94 - (94 - 68) * ratio)
+
+    return `rgb(${r}, ${g}, ${b})`
+  }
+
+  const color = getSeverityColor(severity)
 
   // 🔥 reset fecha al cambiar síntoma
   useEffect(() => {
@@ -132,13 +144,24 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
               max={10}
               value={severity}
               onChange={(e) => setSeverity(Number(e.target.value))}
+              style={{
+                accentColor: color,
+              }}
               className="w-full accent-primary cursor-pointer"
             />
           </div>
 
-          <p className="text-xs text-slate-400">
-            Guardado automático por día
-          </p>
+          <div className="text-xs mt-2 h-4">
+            {status === "saving" && (
+              <span className="text-slate-400 animate-pulse">Guardando...</span>
+            )}
+            {status === "saved" && (
+              <span className="text-emerald-600">✔ Guardado</span>
+            )}
+            {status === "error" && (
+              <span className="text-red-500">Error al guardar</span>
+            )}
+          </div>
         </div>
 
         {/* NOTAS */}
