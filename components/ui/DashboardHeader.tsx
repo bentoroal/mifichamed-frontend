@@ -12,44 +12,40 @@ export default function DashboardHeader({
 }: any) {
   const [query, setQuery] = useState("")
   const debouncedQuery = useDebounce(query, 400)
+  const canAdd = typeof onAdd === "function"
 
   useEffect(() => {
     onSearch?.(debouncedQuery)
   }, [debouncedQuery, onSearch])
 
   return (
-    <div className="flex items-center justify-between mb-6">
-
-      {/* LEFT */}
+    <div className="mb-6 flex items-center justify-between">
       <div className="text-sm text-slate-400">
         MiFichaMed /{" "}
         <span className="font-medium text-slate-900">{title}</span>
       </div>
 
-      {/* RIGHT */}
       <div className="flex items-center gap-4">
-
-        {/* SEARCH */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={placeholder}
-            className="bg-slate-100 border-none rounded-lg pl-10 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary w-64"
+            className="w-64 rounded-lg border-none bg-slate-100 py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary"
           />
         </div>
 
-        {/* ADD */}
-        <button
-          onClick={onAdd}
-          className="bg-primary hover:bg-secondary text-white font-semibold px-4 py-2 rounded-lg text-sm flex items-center gap-2 transition-all shadow-sm hover:shadow-md active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          Añadir
-        </button>
-
+        {canAdd && (
+          <button
+            onClick={onAdd}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-secondary hover:shadow-md active:scale-95"
+          >
+            <Plus className="h-4 w-4" />
+            Anadir
+          </button>
+        )}
       </div>
     </div>
   )

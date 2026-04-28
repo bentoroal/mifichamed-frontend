@@ -22,6 +22,7 @@ export default function SymptomModal({
   symptom = null,
 }: any) {
   const isEdit = mode === "edit"
+  const today = new Date().toISOString().split("T")[0]
 
   // -----------------------------
   // STATE
@@ -140,6 +141,9 @@ export default function SymptomModal({
     ) {
       newErrors.end_date = "Fecha inválida"
     }
+    if (!isOngoing && form.end_date && form.end_date > today) {
+      newErrors.end_date = "No puede ser futura"
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -171,7 +175,7 @@ export default function SymptomModal({
       const payload = {
         symptom_id: symptomId, // ✅ ahora siempre number
         start_date: form.start_date,
-        end_date: isOngoing ? null : form.end_date,
+        end_date: isOngoing ? null : (form.end_date || today),
         notes: form.notes,
       }
 
@@ -284,6 +288,7 @@ export default function SymptomModal({
           <Input
             type="date"
             value={form.end_date}
+            max={today}
             disabled={isOngoing}
             onChange={(e: any) =>
               handleChange("end_date", e.target.value)
@@ -297,12 +302,25 @@ export default function SymptomModal({
         <input
           type="checkbox"
           checked={isOngoing}
-          onChange={(e) => setIsOngoing(e.target.checked)}
+          onChange={(e) => {
+            const checked = e.target.checked
+            setIsOngoing(checked)
+
+            if (checked) {
+              handleChange("end_date", "")
+            }
+          }}
         />
         <span className="text-sm text-slate-700">
           Sigue presente
         </span>
       </div>
+
+      {!isOngoing && (
+        <p className="text-xs text-slate-500 -mt-1">
+          Si no recuerdas la fecha exacta, deja el campo vacío y usaremos hoy.
+        </p>
+      )}
 
       {/* NOTES */}
       <FormField label="Notas">

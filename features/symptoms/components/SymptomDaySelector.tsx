@@ -3,6 +3,7 @@ import { es } from "date-fns/locale"
 
 export default function SymptomDaySelector({
   startDate,
+  endDate,
   selectedDate,
   onSelect,
 }: any) {
@@ -10,9 +11,10 @@ export default function SymptomDaySelector({
 
   const today = new Date()
   const start = new Date(startDate)
+  const end = endDate ? new Date(endDate) : today
 
   const days = []
-  let current = today
+  let current = end
 
   while (current >= start) {
     days.push(new Date(current))

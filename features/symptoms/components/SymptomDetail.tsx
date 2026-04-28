@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { isAfter } from "date-fns"
 import { Pencil, Trash2 } from "lucide-react"
 import SymptomModal from "@/features/symptoms/components/SymptomModal"
 import { useSymptomDetail } from "@/features/symptoms/hooks/useSymptomDetail"
@@ -13,6 +14,7 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
   const [selectedDate, setSelectedDate] = useState(new Date())
 
   const { notes, setNotes } = useSymptomDetail(symptom)
+  const isResolved = !!symptom?.end_date
 
   const { severity, setSeverity, status } = useSymptomDaily(
     symptom?.id,
@@ -32,10 +34,23 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
 
   const color = getSeverityColor(severity)
 
-  // 🔥 reset fecha al cambiar síntoma
+  // Mantiene la fecha seleccionada dentro del rango visible del síntoma.
   useEffect(() => {
-    setSelectedDate(new Date())
-  }, [symptom?.id])
+    if (!symptom) return
+
+    const today = new Date()
+    const maxSelectableDate = symptom.end_date
+      ? new Date(symptom.end_date)
+      : today
+
+    setSelectedDate((prev) => {
+      if (!prev || isAfter(prev, maxSelectableDate)) {
+        return maxSelectableDate
+      }
+
+      return prev
+    })
+  }, [symptom?.id, symptom?.end_date])
 
   if (!symptom) {
     return (
@@ -109,9 +124,17 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
             </div>
             <div>
               <p className="text-[10px] uppercase font-bold text-slate-400">Estado</p>
-              <p className="text-sm font-bold mt-1 text-emerald-600">Activo</p>
+              <p className={`text-sm font-bold mt-1 ${isResolved ? "text-slate-600" : "text-emerald-600"}`}>
+                {isResolved ? "Resuelto" : "Activo"}
+              </p>
             </div>
           </div>
+
+          {isResolved && (
+            <p className="text-xs text-slate-500">
+              Finalizó el: <span className="font-semibold">{symptom.end_date}</span>
+            </p>
+          )}
         </div>
 
         {/* TRACKING DIARIO */}
@@ -123,6 +146,7 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
           {/* 📅 selector */}
           <SymptomDaySelector
             startDate={symptom.start_date}
+            endDate={symptom.end_date}
             selectedDate={selectedDate}
             onSelect={setSelectedDate}
           />

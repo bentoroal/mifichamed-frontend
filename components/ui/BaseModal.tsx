@@ -47,9 +47,11 @@ export default function BaseModal({
         </div>
 
         {/* FOOTER */}
-        <div className="px-6 py-4 border-t bg-slate-50 flex justify-end gap-3">
-          {footer}
-        </div>
+        {footer && (
+          <div className="px-6 py-4 flex justify-end gap-3">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

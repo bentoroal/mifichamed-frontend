@@ -14,6 +14,12 @@ export type Treatment = {
   }
 }
 
+export type DashboardTreatment = Treatment & {
+  conditionId: number
+  conditionName: string
+  conditionStatus: string
+}
+
 export type Symptom = {
   id: number
   symptom: {
@@ -28,6 +34,16 @@ export type Allergy = {
   }
 }
 
+export type Surgery = {
+  id: number
+  surgery: {
+    id?: number
+    name: string
+  } | null
+  surgery_date: string | null
+  notes?: string | null
+}
+
 export type DashboardData = {
   profile: {
     full_name: string
@@ -37,4 +53,5 @@ export type DashboardData = {
   active_conditions: UserCondition[]
   active_symptoms: Symptom[]
   active_allergies: Allergy[]
+  active_surgeries?: Surgery[]
 }

@@ -6,9 +6,9 @@ import { apiFetch } from "@/lib/api"
 
 type CreateUserSymptomPayload = {
   symptom_id: number
-  severity?: number
+  start_date: string
+  end_date?: string | null
   notes?: string
-  is_current?: boolean
 }
 
 type DailyPayload = {

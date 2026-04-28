@@ -4,6 +4,7 @@ export default function Input({
   onChange,
   error,
   disabled = false,
+  ...props
 }: any) {
   const base =
     "w-full h-11 px-4 rounded-lg border bg-white outline-none transition"
@@ -19,6 +20,7 @@ export default function Input({
       value={value}
       disabled={disabled}
       onChange={onChange}
+      {...props}
       className={`${base} ${error ? errorStyle : normal} ${
         disabled ? "bg-slate-100 text-slate-400" : ""
       }`}
