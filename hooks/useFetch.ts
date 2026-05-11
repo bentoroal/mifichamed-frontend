@@ -3,7 +3,7 @@ import { useEffect, useState } from "react"
 export function useFetch(
   fetchFn: () => Promise<any>,
   enabled = true,
-  deps: any[] = [] // 🔥 nuevo
+  deps: any[] = []
 ) {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
