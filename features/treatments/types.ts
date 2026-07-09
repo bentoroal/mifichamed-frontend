@@ -28,6 +28,7 @@ export type MedicationCatalogItem = {
 export type UserConditionOption = {
   id: number
   status?: string | null
+  start_date?: string | null
   condition?: {
     id?: number
     name?: string | null

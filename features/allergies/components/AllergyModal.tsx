@@ -28,7 +28,6 @@ type AllergyFormState = {
   name: string
   status: string
   start_date: string
-  end_date: string
   notes: string
 }
 
@@ -38,7 +37,6 @@ function getInitialForm(allergy?: AllergyItem | null): AllergyFormState {
     name: allergy?.allergy?.name || "",
     status: allergy?.status || "active",
     start_date: allergy?.start_date || "",
-    end_date: allergy?.end_date || "",
     notes: allergy?.notes || "",
   }
 }
@@ -100,14 +98,6 @@ export default function AllergyModal({
       newErrors.allergy_id = "Requerido"
     }
 
-    if (
-      form.start_date &&
-      form.end_date &&
-      form.end_date < form.start_date
-    ) {
-      newErrors.end_date = "Fecha invalida"
-    }
-
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -121,13 +111,11 @@ export default function AllergyModal({
         name?: string
         status: string
         start_date?: string | null
-        end_date?: string | null
         notes?: string
       } = {
         notes: form.notes.trim(),
         status: form.status,
         start_date: form.start_date || null,
-        end_date: form.end_date || null,
       }
 
       if (isEdit) {
@@ -235,16 +223,6 @@ export default function AllergyModal({
           />
         </FormField>
 
-        <FormField label="Fecha fin" error={errors.end_date ?? undefined}>
-          <Input
-            type="date"
-            value={form.end_date}
-            onChange={(e: ChangeEvent<HTMLInputElement>) =>
-              handleChange("end_date", e.target.value)
-            }
-            error={errors.end_date}
-          />
-        </FormField>
       </div>
 
       <FormField label="Notas">

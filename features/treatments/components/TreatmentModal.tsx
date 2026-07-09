@@ -7,6 +7,7 @@ import FormField from "@/components/ui/FormField"
 import Input from "@/components/ui/Input"
 import Select from "@/components/ui/Select"
 import Textarea from "@/components/ui/TextArea"
+import { formatDateDDMMYYYY } from "@/lib/dateUtils"
 import { getUserConditions } from "@/features/conditions/services/conditionServices"
 import {
   createMedication,
@@ -221,7 +222,9 @@ export default function TreatmentModal({
           disabled={loadingConditions || isEdit}
           options={conditions.map((condition) => ({
             value: condition.id,
-            label: condition.condition?.name,
+            label: condition.start_date
+              ? `${condition.condition?.name} (${formatDateDDMMYYYY(condition.start_date)})`
+              : condition.condition?.name,
           }))}
           error={errors.user_condition_id}
         />

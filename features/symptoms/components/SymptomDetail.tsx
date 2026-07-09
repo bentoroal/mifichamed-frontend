@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { isAfter } from "date-fns"
+import { isAfter, subDays } from "date-fns"
 import { Pencil, Trash2 } from "lucide-react"
 import SymptomModal from "@/features/symptoms/components/SymptomModal"
 import { useSymptomDetail } from "@/features/symptoms/hooks/useSymptomDetail"
@@ -59,6 +59,13 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
       </div>
     )
   }
+
+  // Calcular el rango efectivo para mostrar días
+  const today = new Date()
+  const symptomStart = new Date(symptom.start_date)
+  const last7DaysStart = subDays(today, 6)
+  const effectiveStartDate = isAfter(symptomStart, last7DaysStart) ? symptomStart : last7DaysStart
+  const effectiveEndDate = today
 
   return (
     <>
@@ -145,8 +152,8 @@ export default function SymptomDetail({ symptom, refresh, onDelete }: any) {
 
           {/* 📅 selector */}
           <SymptomDaySelector
-            startDate={symptom.start_date}
-            endDate={symptom.end_date}
+            startDate={effectiveStartDate}
+            endDate={effectiveEndDate}
             selectedDate={selectedDate}
             onSelect={setSelectedDate}
           />

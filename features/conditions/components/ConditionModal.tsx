@@ -122,7 +122,7 @@ export default function ConditionModal({
       }
 
       const payload = {
-        condition_id: conditionId, // ✅ ahora sí
+        condition_id: conditionId,
         start_date: form.start_date,
         end_date: isOngoing ? null : form.end_date,
         status: form.status,

@@ -2,13 +2,27 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Activity, Pill, Scissors, ShieldAlert, Stethoscope } from "lucide-react"
+import {
+  Activity,
+  CalendarDays,
+  Cigarette,
+  Dumbbell,
+  Pill,
+  Ruler,
+  Scale,
+  Scissors,
+  ShieldAlert,
+  Stethoscope,
+  Wine,
+} from "lucide-react"
 import { motion } from "motion/react"
 
 import DashboardCard from "@/components/ui/DashboardCard"
-import MetricCard from "@/components/ui/MetricCard"
+import BiometricCard from "@/components/ui/BiometricCard"
+import HabitCard, { type HabitCardTone } from "@/components/ui/HabitCard"
 import { DashboardData } from "@/features/dashboard/types"
 import { getDashboard } from "@/lib/dashboard"
+import { getHabitLabel } from "@/lib/labels"
 
 type SummaryTone = "red" | "blue" | "green" | "amber" | "violet"
 
@@ -54,6 +68,50 @@ const toneStyles: Record<
     dot: "bg-violet-400",
     badge: "bg-violet-100 text-violet-700",
   },
+}
+
+function normalizeProfileValue(value: string | null | undefined) {
+  return value ? value.toLowerCase() : ""
+}
+
+function getRiskHabitTone(value: string | null | undefined): HabitCardTone {
+  const normalizedValue = normalizeProfileValue(value)
+
+  if (normalizedValue === "none") return "green"
+  if (normalizedValue === "social") return "yellow"
+  if (normalizedValue === "regular") return "orange"
+  if (normalizedValue === "heavy") return "red"
+
+  return "slate"
+}
+
+function getExerciseHabitTone(value: string | null | undefined): HabitCardTone {
+  const normalizedValue = normalizeProfileValue(value)
+
+  if (normalizedValue === "none") return "red"
+  if (normalizedValue === "light") return "orange"
+  if (normalizedValue === "moderate") return "yellow"
+  if (normalizedValue === "intense") return "green"
+
+  return "slate"
+}
+
+function getAge(birthDate: string | null | undefined) {
+  if (!birthDate) return "N/A"
+
+  const birth = new Date(birthDate)
+  const today = new Date()
+
+  if (Number.isNaN(birth.getTime())) return "N/A"
+
+  let age = today.getFullYear() - birth.getFullYear()
+  const birthdayHasPassed =
+    today.getMonth() > birth.getMonth() ||
+    (today.getMonth() === birth.getMonth() && today.getDate() >= birth.getDate())
+
+  if (!birthdayHasPassed) age -= 1
+
+  return age
 }
 
 function DashboardSummaryList({
@@ -148,6 +206,7 @@ export default function DashboardPage() {
 
   let bmi: number | string = "N/A"
   let bmiStatus = "Datos insuficientes"
+  const age = getAge(profile?.birth_date)
 
   if (profile?.weight != null && profile?.height != null) {
     const heightInMeters = profile.height / 100
@@ -234,11 +293,75 @@ export default function DashboardPage() {
         </h2>
       </motion.div>
 
-      <section className="mb-10">
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <MetricCard label="Peso" value={profile?.weight ?? "N/A"} unit="kg" />
-          <MetricCard label="Altura" value={profile?.height ?? "N/A"} unit="cms." />
-          <MetricCard label="IMC" value={bmi} status={bmiStatus} />
+      <section className="mb-8">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className="rounded-2xl border border-teal-100 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between border-b border-teal-50 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">
+                  Datos biometricos
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
+              <BiometricCard
+                label="Peso"
+                value={profile?.weight ?? "N/A"}
+                unit="kg"
+                icon={Scale}
+              />
+              <BiometricCard
+                label="Altura"
+                value={profile?.height ?? "N/A"}
+                unit="cm"
+                icon={Ruler}
+              />
+              <BiometricCard
+                label="IMC"
+                value={bmi}
+                status={bmiStatus}
+                icon={Activity}
+              />
+              <BiometricCard
+                label="Edad"
+                value={age}
+                unit={typeof age === "number" ? "anos" : undefined}
+                icon={CalendarDays}
+              />
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="mb-4 flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="text-lg font-black text-slate-900">
+                  Habitos
+                </h3>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3">
+              <HabitCard
+                label="Alcohol"
+                value={getHabitLabel(profile?.alcohol_consumption, "alcohol")}
+                tone={getRiskHabitTone(profile?.alcohol_consumption)}
+                icon={Wine}
+              />
+              <HabitCard
+                label="Cigarrillo"
+                value={getHabitLabel(profile?.smoking_habits, "smoking")}
+                tone={getRiskHabitTone(profile?.smoking_habits)}
+                icon={Cigarette}
+              />
+              <HabitCard
+                label="Ejercicio"
+                value={getHabitLabel(profile?.physical_activity, "physicalActivity")}
+                tone={getExerciseHabitTone(profile?.physical_activity)}
+                icon={Dumbbell}
+              />
+            </div>
+          </div>
         </div>
       </section>
 

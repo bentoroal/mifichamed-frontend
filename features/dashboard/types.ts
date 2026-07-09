@@ -47,8 +47,12 @@ export type Surgery = {
 export type DashboardData = {
   profile: {
     full_name: string
+    birth_date?: string | null
     weight: number | null
     height: number | null
+    alcohol_consumption: string | null
+    smoking_habits: string | null
+    physical_activity: string | null
   }
   active_conditions: UserCondition[]
   active_symptoms: Symptom[]

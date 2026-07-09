@@ -88,9 +88,9 @@ export default function SymptomModal({
         notes: symptom.notes || "",
       })
 
-      setIsOngoing(!symptom.end_date)
+      setIsOngoing(!symptom.end_date || symptom.end_date === today)
     }
-  }, [symptom, isEdit])
+  }, [symptom, isEdit, today])
 
   // -----------------------------
   // RESET CREATE MODE
@@ -175,7 +175,7 @@ export default function SymptomModal({
       const payload = {
         symptom_id: symptomId, // ✅ ahora siempre number
         start_date: form.start_date,
-        end_date: isOngoing ? null : (form.end_date || today),
+        end_date: isOngoing ? today : (form.end_date || null),
         notes: form.notes,
       }
 
@@ -307,18 +307,20 @@ export default function SymptomModal({
             setIsOngoing(checked)
 
             if (checked) {
+              handleChange("end_date", today)
+            } else {
               handleChange("end_date", "")
             }
           }}
         />
         <span className="text-sm text-slate-700">
-          Sigue presente
+          Aun presente
         </span>
       </div>
 
       {!isOngoing && (
         <p className="text-xs text-slate-500 -mt-1">
-          Si no recuerdas la fecha exacta, deja el campo vacío y usaremos hoy.
+          Selecciona la fecha en que terminó el síntoma.
         </p>
       )}
 
